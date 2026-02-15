@@ -43,10 +43,13 @@ interface Product {
 
 interface Customer {
   customerId: string;
+  name?: string;
+  email: string;
   totalOrders: number;
   totalSpent: number;
   firstOrderDate: Date;
   lastOrderDate: Date;
+  segment?: string;
 }
 
 export class AnalyticsEngine {
@@ -85,6 +88,9 @@ export class AnalyticsEngine {
     const previousOrderCount = previousOrders.length;
     const previousAov =
       previousOrderCount > 0 ? previousRevenue / previousOrderCount : 0;
+    const previousProfit = previousOrders.reduce((sum, order) => {
+      return sum + this.calculateOrderProfit(order);
+    }, 0);
 
     // Growth calculations
     const revenueGrowth = this.calculateGrowthRate(
@@ -96,16 +102,18 @@ export class AnalyticsEngine {
       previousOrderCount,
     );
     const aovGrowth = this.calculateGrowthRate(aov, previousAov);
+    const profitGrowth = this.calculateGrowthRate(totalProfit, previousProfit);
 
     return {
       totalRevenue: Math.round(totalRevenue),
       totalOrders,
-      aov: Math.round(aov),
+      averageOrderValue: Math.round(aov),
       totalProfit: Math.round(totalProfit),
       profitMargin: Math.round(profitMargin * 100) / 100,
       revenueGrowth: Math.round(revenueGrowth * 100) / 100,
       ordersGrowth: Math.round(ordersGrowth * 100) / 100,
       aovGrowth: Math.round(aovGrowth * 100) / 100,
+      profitGrowth: Math.round(profitGrowth * 100) / 100,
     };
   }
 
@@ -400,6 +408,241 @@ export class AnalyticsEngine {
         percentage: Math.round((count / orders.length) * 100),
       }))
       .sort((a, b) => b.count - a.count);
+  }
+
+  /**
+   * Analyze inventory health (Fast/Slow moving, Out of Stock)
+   */
+  static analyzeInventoryHealth(products: Product[]) {
+    const totalProducts = products.length;
+    if (totalProducts === 0) {
+      return { fastMoving: 0, slowMoving: 0, outOfStock: 0 };
+    }
+
+    const outOfStock = products.filter((p) => (p as any).stock <= 0).length;
+
+    // Fast moving: top 20% by units sold
+    // Slow moving: bottom 20% by units sold (but > 0 stock)
+    const sortedByUnits = [...products].sort(
+      (a, b) => b.totalUnits - a.totalUnits,
+    );
+    const topThreshold = Math.ceil(totalProducts * 0.2);
+    const bottomThreshold = Math.ceil(totalProducts * 0.8);
+
+    const fastMoving = sortedByUnits.slice(0, topThreshold).length;
+    const slowMoving = sortedByUnits.filter(
+      (p, i) => i >= bottomThreshold && (p as any).stock > 0,
+    ).length;
+
+    return {
+      fastMoving,
+      slowMoving,
+      outOfStock,
+    };
+  }
+
+  /**
+   * Analyze category distribution
+   */
+  static analyzeCategories(products: Product[]) {
+    const categoryGroups = new Map<string, number>();
+
+    products.forEach((product) => {
+      const category = product.category || "Uncategorized";
+      categoryGroups.set(category, (categoryGroups.get(category) || 0) + 1);
+    });
+
+    return Array.from(categoryGroups.entries())
+      .map(([name, count]) => ({
+        name,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  /**
+   * Analyze performance by state
+   */
+  static analyzeByState(orders: Order[]) {
+    const stateGroups = new Map<string, any>();
+
+    orders.forEach((order) => {
+      const state = order.customer.state;
+      if (!stateGroups.has(state)) {
+        stateGroups.set(state, {
+          state,
+          revenue: 0,
+          orders: 0,
+        });
+      }
+
+      const group = stateGroups.get(state)!;
+      group.revenue += order.total;
+      group.orders += 1;
+    });
+
+    return Array.from(stateGroups.values())
+      .map((group) => ({
+        name: group.state,
+        revenue: Math.round(group.revenue),
+        orders: group.orders,
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
+  }
+
+  /**
+   * Analyze price range distribution
+   */
+  static analyzePriceRanges(products: Product[]) {
+    const ranges = [
+      { min: 0, max: 500, label: "0-500" },
+      { min: 501, max: 1000, label: "501-1000" },
+      { min: 1001, max: 2000, label: "1001-2000" },
+      { min: 2001, max: 5000, label: "2001-5000" },
+      { min: 5001, max: Infinity, label: "5000+" },
+    ];
+
+    const distribution = ranges.map((r) => ({
+      name: r.label,
+      revenue: 0,
+      count: 0,
+    }));
+
+    products.forEach((product) => {
+      const price = product.price;
+      const range = distribution.find((d, i) => {
+        const r = ranges[i];
+        return price >= r.min && price <= r.max;
+      });
+
+      if (range) {
+        range.revenue += product.totalRevenue;
+        range.count += product.totalUnits;
+      }
+    });
+
+    return distribution;
+  }
+
+  /**
+   * Analyze discount effectiveness
+   */
+  static analyzeDiscountEffectiveness(orders: Order[]) {
+    // Group by discount percentage buckets: 0%, 1-10%, 11-20%, etc.
+    const buckets = [
+      { min: 0, max: 0, label: "0%" },
+      { min: 1, max: 10, label: "1-10%" },
+      { min: 11, max: 20, label: "11-20%" },
+      { min: 21, max: 30, label: "21-30%" },
+      { min: 31, max: 50, label: "31-50%" },
+      { min: 51, max: 100, label: "50%+" },
+    ];
+
+    const analysis = buckets.map((b) => ({
+      name: b.label,
+      revenue: 0,
+      orders: 0,
+    }));
+
+    orders.forEach((order) => {
+      const discountAmount = order.costs.discount || 0;
+      const totalBeforeDiscount = order.total + discountAmount;
+      const discountPercentage =
+        totalBeforeDiscount > 0
+          ? Math.round((discountAmount / totalBeforeDiscount) * 100)
+          : 0;
+
+      const bucket = analysis.find((a, i) => {
+        const b = buckets[i];
+        return discountPercentage >= b.min && discountPercentage <= b.max;
+      });
+
+      if (bucket) {
+        bucket.revenue += order.total;
+        bucket.orders += 1;
+      }
+    });
+
+    return analysis;
+  }
+
+  /**
+   * Generate pricing strategy recommendations
+   */
+  static generatePricingStrategy(products: Product[]) {
+    return products
+      .map((product) => {
+        const margin =
+          product.price > 0
+            ? ((product.price - product.cost) / product.price) * 100
+            : 0;
+
+        let action = "Optimal";
+        if (margin < 15) action = "Underpriced";
+        if (margin > 50 && product.totalUnits < 5) action = "Overpriced";
+        if (margin < 0) action = "Unprofitable";
+
+        return {
+          productId: product.productId,
+          name: product.name,
+          avgPrice: Math.round(product.price),
+          sold: product.totalUnits,
+          revenue: Math.round(product.totalRevenue),
+          margin: Math.round(margin * 10) / 10,
+          action,
+        };
+      })
+      .sort((a, b) => b.revenue - a.revenue);
+  }
+
+  /**
+   * Analyze customer purchase frequency
+   */
+  static analyzeCustomerPurchaseFrequency(customers: Customer[]) {
+    const frequency = {
+      "1 Order": 0,
+      "2 Orders": 0,
+      "3-5 Orders": 0,
+      "5+ Orders": 0,
+    };
+
+    customers.forEach((c) => {
+      const count = c.totalOrders;
+      if (count === 1) frequency["1 Order"]++;
+      else if (count === 2) frequency["2 Orders"]++;
+      else if (count <= 5) frequency["3-5 Orders"]++;
+      else frequency["5+ Orders"]++;
+    });
+
+    return Object.entries(frequency).map(([name, count]) => ({
+      name,
+      count,
+    }));
+  }
+
+  /**
+   * Calculate top customers with CLV
+   */
+  static calculateTopCustomers(customers: Customer[], limit = 10) {
+    return customers
+      .map((c) => {
+        const aov = c.totalOrders > 0 ? c.totalSpent / c.totalOrders : 0;
+        // Basic CLV estimation: Total Spent * (1 + Retention probability placeholder)
+        const estCLV = c.totalSpent * 1.5;
+
+        return {
+          id: c.customerId,
+          name: c.name || c.email.split("@")[0],
+          email: c.email,
+          totalSpent: Math.round(c.totalSpent),
+          orders: c.totalOrders,
+          aov: Math.round(aov),
+          estCLV: Math.round(estCLV),
+          segment: c.segment || "regular",
+        };
+      })
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .slice(0, limit);
   }
 }
 

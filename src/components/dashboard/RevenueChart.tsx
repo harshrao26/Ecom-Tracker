@@ -68,8 +68,8 @@ export default function RevenueChart({ data }: RevenueChartProps) {
             borderRadius: "8px",
             boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
           }}
-          formatter={(value: number) => [
-            `₹${value.toLocaleString("en-IN")}`,
+          formatter={(value: any) => [
+            `₹${(value || 0).toLocaleString("en-IN")}`,
             "Revenue",
           ]}
         />

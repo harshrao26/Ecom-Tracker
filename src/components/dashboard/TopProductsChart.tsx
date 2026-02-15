@@ -56,7 +56,9 @@ export default function TopProductsChart({ data }: TopProductsChartProps) {
           type="number"
           stroke="#6B7280"
           style={{ fontSize: "12px" }}
-          tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+          tickFormatter={(value: any) =>
+            `₹${((value || 0) / 1000).toFixed(0)}k`
+          }
         />
 
         <YAxis
@@ -74,9 +76,9 @@ export default function TopProductsChart({ data }: TopProductsChartProps) {
             borderRadius: "8px",
             boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
           }}
-          formatter={(value: number, name: string) => {
+          formatter={(value: any, name: any) => {
             if (name === "revenue") {
-              return [`₹${value.toLocaleString("en-IN")}`, "Revenue"];
+              return [`₹${(value || 0).toLocaleString("en-IN")}`, "Revenue"];
             }
             return [value, name];
           }}

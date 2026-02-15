@@ -1,148 +1,148 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db/connection";
 import AnalyticsAggregator from "@/lib/analytics/aggregator";
-import AnalyticsEngine from "@/lib/analytics/engine";
-import GeminiAIClient from "@/lib/ai/gemini-client";
-import { calculateDateRange } from "@/lib/utils/analytics";
+import { insightsGenerator } from "@/lib/ai/insights-generator";
+import AnalyticsCache from "@/lib/analytics/cache";
 
 /**
  * POST /api/ai/insights
- * Generate AI-powered insights for analytics data
+ * Main AI insights API endpoint
  */
 export async function POST(request: NextRequest) {
   try {
+    // STEP 1: PARSE REQUEST BODY
     const body = await request.json();
-    const {
-      userId,
-      storeId = "all",
-      period = "30d",
-      insightType = "all",
-    } = body;
+    console.log("📥 AI Insight Request Body:", body);
+    const { insightType, storeId } = body;
 
-    if (!userId) {
+    // STEP 2: VALIDATE INPUT
+    const validTypes = ["forecast", "profit", "churn", "marketing", "all"];
+    if (!validTypes.includes(insightType)) {
       return NextResponse.json(
-        { error: "userId is required" },
+        {
+          error:
+            "Invalid insight type. Must be: forecast, profit, churn, marketing, or all",
+        },
         { status: 400 },
       );
     }
 
+    // TODO: Get actual userId from session
+    const userId = "6991fdaa767d73422e21e18d";
+
+    console.log(`🤖 Generating ${insightType} insight for store ${storeId}`);
+
+    // STEP 3: CHECK CACHE (24 hour TTL for AI insights)
+    const cacheKey = `ai:${insightType}:${storeId}`;
+    const cached = AnalyticsCache.get(cacheKey);
+
+    if (cached) {
+      console.log("✅ Returning cached AI insight");
+      return NextResponse.json({
+        success: true,
+        data: cached,
+        insights: cached.legacyFormat, // For backward compatibility
+        cached: true,
+        generatedAt: cached.timestamp,
+      });
+    }
+
+    // STEP 4: CONNECT TO DATABASE
     await connectDB();
 
-    // Fetch analytics data
-    const dateRange = calculateDateRange(period);
-    const rawData = await AnalyticsAggregator.fetchAnalyticsData({
-      userId,
-      storeId,
-      startDate: dateRange.start,
-      endDate: dateRange.end,
-    });
+    // STEP 5: GENERATE INSIGHTS
+    let result: any = {};
+    const startTime = Date.now();
 
-    // Process data
-    const analytics = {
-      overview: AnalyticsEngine.calculateOverview(rawData.orders),
-      topProducts: AnalyticsEngine.getTopProducts(rawData.products, 10),
-      regionalData: AnalyticsEngine.analyzeByRegion(rawData.orders),
-      customerSegments: AnalyticsEngine.segmentCustomers(rawData.customers),
-      codAnalysis: AnalyticsEngine.analyzeCOD(rawData.orders),
-      profitAnalysis: AnalyticsEngine.calculateSKUProfitability(
-        rawData.products,
-      ),
+    if (insightType === "all") {
+      // For legacy components, generate all 4 types
+      const [f, p, c, m] = await Promise.all([
+        fetchDataForInsight("forecast", userId, storeId).then((d) =>
+          insightsGenerator.generateSalesForecast(d as any),
+        ),
+        fetchDataForInsight("profit", userId, storeId).then((d) =>
+          insightsGenerator.suggestProfitOptimization(d as any),
+        ),
+        fetchDataForInsight("churn", userId, storeId).then((d) =>
+          insightsGenerator.predictChurn(d as any),
+        ),
+        fetchDataForInsight("marketing", userId, storeId).then((d) =>
+          insightsGenerator.generateMarketingStrategy(d as any),
+        ),
+      ]);
+
+      result = {
+        salesForecast: f,
+        profitOptimization: p,
+        churnPrediction: c,
+        marketingStrategy: m,
+        // Legacy string format for AIInsights component
+        legacyFormat: {
+          salesForecast: convertToMarkdown("forecast", f),
+          pricingOptimization: convertToMarkdown("profit", p),
+          churnPrediction: convertToMarkdown("churn", c),
+          performanceReport: convertToMarkdown("marketing", m),
+          indiaInsights: "### 🇮🇳 India Specifics\nFocus on Tier 2 cities and COD optimization as suggested in the reports above.",
+        },
+      };
+    } else {
+      const data = await fetchDataForInsight(insightType, userId, storeId);
+      let insight;
+
+      switch (insightType) {
+        case "forecast":
+          insight = await insightsGenerator.generateSalesForecast(data as any);
+          break;
+        case "profit":
+          insight = await insightsGenerator.suggestProfitOptimization(
+            data as any,
+          );
+          break;
+        case "churn":
+          insight = await insightsGenerator.predictChurn(data as any);
+          break;
+        case "marketing":
+          insight = await insightsGenerator.generateMarketingStrategy(
+            data as any,
+          );
+          break;
+      }
+      result = insight;
+      result.legacyFormat = {
+        [insightType]: convertToMarkdown(insightType, insight),
+      };
+    }
+
+    const endTime = Date.now();
+    const generationTime = endTime - startTime;
+
+    // STEP 6: ADD METADATA
+    const responseData = {
+      ...result,
+      timestamp: new Date().toISOString(),
+      generationTime,
+      model: "gemini-2.0-flash-thinking",
     };
 
-    // Initialize Gemini client
-    const aiClient = new GeminiAIClient();
+    // STEP 7: CACHE RESULT (24 hours)
+    AnalyticsCache.set(cacheKey, responseData, 86400);
 
-    // Generate insights based on type
-    let insights: any = {};
-
-    if (insightType === "all" || insightType === "forecast") {
-      console.log("📊 Generating sales forecast...");
-      insights.salesForecast = await aiClient.generateSalesForecast({
-        historicalRevenue: analytics.overview.totalRevenue
-          ? [analytics.overview.totalRevenue]
-          : [],
-        currentRevenue: analytics.overview.totalRevenue || 0,
-        growthRate: analytics.overview.revenueGrowth || 0,
-        topProducts: analytics.topProducts,
-      });
-    }
-
-    if (insightType === "all" || insightType === "inventory") {
-      console.log("📦 Generating inventory insights...");
-      insights.inventoryOptimization = await aiClient.generateInventoryInsights(
-        {
-          products: rawData.products.map((p) => ({
-            name: p.name,
-            stock: p.currentStock || p.stock || 0,
-            unitsSold: p.totalUnits || 0,
-            revenue: p.totalRevenue || 0,
-          })),
-          totalRevenue: analytics.overview.totalRevenue || 0,
-        },
-      );
-    }
-
-    if (insightType === "all" || insightType === "pricing") {
-      console.log("💰 Generating pricing insights...");
-      insights.pricingOptimization = await aiClient.generatePricingInsights({
-        products: analytics.profitAnalysis.map((p) => ({
-          name: p.name,
-          price: p.avgSellingPrice || 0,
-          cost: p.costPerUnit || 0,
-          profitMargin: p.profitMargin || 0,
-          revenue: p.revenue || 0,
-        })),
-        avgMargin: analytics.overview.profitMargin || 0,
-      });
-    }
-
-    if (insightType === "all" || insightType === "churn") {
-      console.log("👥 Generating churn prediction...");
-      insights.churnPrediction = await aiClient.generateChurnPrediction({
-        customerSegments: {
-          vip: analytics.customerSegments.vip || 0,
-          regular: analytics.customerSegments.regular || 0,
-          atRisk: analytics.customerSegments.atRisk || 0,
-          churned: analytics.customerSegments.churned || 0,
-        },
-        vipCustomers: analytics.customerSegments.vipCustomers || [],
-        atRiskCustomers: analytics.customerSegments.atRiskCustomers || [],
-      });
-    }
-
-    if (insightType === "all" || insightType === "report") {
-      console.log("📋 Generating performance report...");
-      insights.performanceReport = await aiClient.generatePerformanceReport({
-        overview: analytics.overview,
-        topProducts: analytics.topProducts,
-        regionalData: analytics.regionalData,
-        customerSegments: analytics.customerSegments,
-        codAnalysis: analytics.codAnalysis,
-        period,
-      });
-    }
-
-    if (insightType === "all" || insightType === "india") {
-      console.log("🇮🇳 Generating India-specific insights...");
-      insights.indiaInsights = await aiClient.generateIndiaSpecificInsights({
-        codAnalysis: analytics.codAnalysis,
-        regionalData: analytics.regionalData,
-      });
-    }
-
+    // STEP 8: RETURN RESPONSE
     return NextResponse.json({
       success: true,
-      insights,
-      period,
-      generatedAt: new Date().toISOString(),
+      data: responseData,
+      insights: responseData.legacyFormat, // For backward compatibility
+      cached: false,
+      generatedAt: responseData.timestamp,
     });
   } catch (error) {
-    console.error("❌ Error generating AI insights:", error);
+    console.error("❌ AI Insight Error:", error);
 
     return NextResponse.json(
       {
-        error: "Failed to generate insights",
-        message: error instanceof Error ? error.message : "Unknown error",
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to generate insight",
       },
       { status: 500 },
     );
@@ -150,56 +150,169 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/ai/insights
- * Get available insight types
+ * Helper to convert structured JSON to Markdown for legacy components
  */
-export async function GET(request: NextRequest) {
+function convertToMarkdown(type: string, data: any): string {
+  if (!data) return "No data available.";
+
+  switch (type) {
+    case "forecast":
+      return `### 📈 Sales Forecast
+**Predicted Revenue:** ₹${data.predictedRevenue.toLocaleString()}
+**Growth Rate:** +${data.growthRate}%
+**Confidence:** ${data.confidence}%
+
+**Key Patterns:**
+${data.seasonalPatterns.map((p: string) => `- ${p}`).join("\n")}
+
+**Peak Days:** ${data.peakDays.join(", ")}`;
+
+    case "profit":
+      return `### 💰 Profit Optimization
+**Top Opportunities:**
+${data.increasePrice?.slice(0, 3).map((p: any) => `- **${p.productName}**: Increase price to ₹${p.suggestedPrice} (${p.reason})`).join("\n")}
+
+**Discount Strategies:**
+${data.applyDiscounts?.slice(0, 2).map((p: any) => `- **${p.productName}**: ${p.reason}`).join("\n")}`;
+
+    case "churn":
+      return `### 👥 Churn Prediction
+**At-Risk Customers:** ${data.highRiskCustomers?.length || 0}
+**Retention Strategies:**
+${data.retentionStrategies?.map((s: string) => `- ${s}`).join("\n")}`;
+
+    case "marketing":
+      return `### 🎯 Marketing Strategy
+**Recommended Campaigns:**
+${data.campaigns?.map((c: any) => `- **${c.name}** (${c.channel}): Budget ₹${c.budget}, Expected ROI: ${c.roi}`).join("\n")}`;
+
+    default:
+      return "Detailed insights available in the premium AI dashboard.";
+  }
+}
+
+/**
+ * Fetch data required for specific insight type
+ */
+async function fetchDataForInsight(
+  type: string,
+  userId: string,
+  storeId: string,
+) {
+  const endDate = new Date().toISOString().split("T")[0];
+  const startDate = new Date();
+
+  switch (type) {
+    case "forecast":
+      // Need 90 days of historical data
+      startDate.setDate(startDate.getDate() - 90);
+      const trends = await AnalyticsAggregator.fetchAnalyticsData({
+        userId,
+        storeId,
+        startDate: startDate.toISOString().split("T")[0],
+        endDate,
+      });
+
+      // Group by day for the AI
+      const dailyRevenue: any[] = [];
+      const grouped = new Map();
+
+      trends.orders.forEach((order: any) => {
+        const date = new Date(order.date).toISOString().split("T")[0];
+        if (!grouped.has(date)) {
+          grouped.set(date, { date, revenue: 0, orders: 0 });
+        }
+        const g = grouped.get(date);
+        g.revenue += order.total;
+        g.orders += 1;
+      });
+
+      return {
+        dailyRevenue: Array.from(grouped.values()).sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+        ),
+        period: 90,
+      };
+
+    case "profit":
+      // Need products with sales data
+      startDate.setDate(startDate.getDate() - 90);
+      const productData = await AnalyticsAggregator.fetchAnalyticsData({
+        userId,
+        storeId,
+        startDate: startDate.toISOString().split("T")[0],
+        endDate,
+      });
+
+      // Use engine to get aggregated product performance
+      const { AnalyticsEngine } = await import("@/lib/analytics/engine");
+      return AnalyticsEngine.calculateSKUProfitability(
+        productData.products,
+      ).map((p: any) => ({
+        id: p.productId,
+        name: p.name,
+        category: p.category,
+        price: p.avgSellingPrice,
+        cost: p.costPerUnit,
+        unitsSold: p.units,
+        revenue: p.revenue,
+        margin: p.profitMargin,
+      }));
+
+    case "churn":
+      // Need customers with 6 months of history
+      startDate.setDate(startDate.getDate() - 180);
+      const customerData = await AnalyticsAggregator.fetchAnalyticsData({
+        userId,
+        storeId,
+        startDate: startDate.toISOString().split("T")[0],
+        endDate,
+      });
+
+      return customerData.customers.map((c: any) => ({
+        id: c.customerId,
+        name: c.name || "Customer",
+        email: c.email,
+        lastPurchase: c.lastOrderDate,
+        lifetimeValue: c.totalSpent,
+        orderCount: c.totalOrders,
+        avgOrderValue: c.totalSpent / c.totalOrders,
+        city: c.city,
+      }));
+
+    case "marketing":
+      // Need comprehensive analytics
+      startDate.setDate(startDate.getDate() - 30);
+      const fullData = await AnalyticsAggregator.fetchAnalyticsData({
+        userId,
+        storeId,
+        startDate: startDate.toISOString().split("T")[0],
+        endDate,
+      });
+
+      const engine = (await import("@/lib/analytics/engine")).default;
+      return {
+        customerSegments: engine.segmentCustomers(fullData.customers),
+        regionalData: engine.analyzeByRegion(fullData.orders),
+        topProducts: engine.getTopProducts(fullData.products, 10),
+        codAnalysis: engine.analyzeCOD(fullData.orders),
+      };
+
+    default:
+      throw new Error(`Unsupported insight type: ${type}`);
+  }
+}
+
+/**
+ * GET /api/ai/insights
+ */
+export async function GET() {
   return NextResponse.json({
     availableInsights: [
-      {
-        type: "forecast",
-        name: "Sales Forecast",
-        description: "30-day revenue prediction with growth factors",
-      },
-      {
-        type: "inventory",
-        name: "Inventory Optimization",
-        description: "Stock alerts, restocking priorities, overstock clearance",
-      },
-      {
-        type: "pricing",
-        name: "Pricing Optimization",
-        description: "Price increase opportunities, discount strategies",
-      },
-      {
-        type: "churn",
-        name: "Churn Prediction",
-        description: "At-risk customers, retention strategies",
-      },
-      {
-        type: "report",
-        name: "Performance Report",
-        description: "Comprehensive weekly/monthly summary",
-      },
-      {
-        type: "india",
-        name: "India-Specific Insights",
-        description: "COD optimization, regional expansion, tier 2/3 cities",
-      },
-      {
-        type: "all",
-        name: "All Insights",
-        description: "Generate all insights at once",
-      },
+      { type: "forecast", name: "Sales Forecast" },
+      { type: "profit", name: "Profit Optimization" },
+      { type: "churn", name: "Churn Prediction" },
+      { type: "marketing", name: "Marketing Strategy" },
     ],
-    usage: {
-      endpoint: "POST /api/ai/insights",
-      params: {
-        userId: "required",
-        storeId: "optional (default: all)",
-        period: "optional (default: 30d)",
-        insightType: "optional (default: all)",
-      },
-    },
   });
 }

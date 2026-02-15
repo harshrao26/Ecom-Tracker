@@ -2,8 +2,7 @@ import mongoose, { Schema, model, models, Document } from "mongoose";
 import crypto from "crypto";
 
 export interface IStore extends Document {
-  _id: string;
-  userId: string;
+  userId: mongoose.Types.ObjectId;
   name: string;
   platform: "shopify" | "woocommerce" | "amazon" | "flipkart" | "meta";
   platformStoreId: string;

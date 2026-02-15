@@ -1,17 +1,15 @@
-/**
- * MetricCard Component
- * Displays KPI metrics with trend indicators
- */
+"use client";
 
-import { TrendingUp, TrendingDown } from "lucide-react";
+import React from "react";
 
 interface MetricCardProps {
   title: string;
-  value: string;
-  change: number;
-  icon: React.ReactNode;
-  trend: "up" | "down";
+  value: string | number;
+  change?: number;
+  icon?: React.ReactNode;
+  trend?: "up" | "down" | "neutral";
   subtitle?: string;
+  description?: string;
 }
 
 export default function MetricCard({
@@ -21,38 +19,63 @@ export default function MetricCard({
   icon,
   trend,
   subtitle,
+  description,
 }: MetricCardProps) {
-  const isPositive = trend === "up";
-
   return (
-    <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100">
-      <div className="flex items-center justify-between mb-4">
-        <div className="p-3 rounded-lg bg-gradient-to-br from-blue-50 to-purple-50">
-          {icon}
-        </div>
+    <div className="group bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 relative overflow-hidden">
+      {/* Decorative gradient background on hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/0 via-transparent to-purple-50/0 group-hover:from-blue-50/50 group-hover:to-purple-50/50 transition-all duration-500" />
 
-        <div
-          className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${
-            isPositive
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
-        >
-          {isPositive ? (
-            <TrendingUp className="w-4 h-4" />
-          ) : (
-            <TrendingDown className="w-4 h-4" />
+      <div className="relative z-10">
+        <div className="flex items-start justify-between mb-4">
+          <div
+            className={`p-3 rounded-2xl ${
+              title.toLowerCase().includes("revenue")
+                ? "bg-green-100 text-green-600"
+                : title.toLowerCase().includes("orders")
+                  ? "bg-blue-100 text-blue-600"
+                  : title.toLowerCase().includes("profit") ||
+                      title.toLowerCase().includes("growth")
+                    ? "bg-purple-100 text-purple-600"
+                    : "bg-orange-100 text-orange-600"
+            } shadow-sm group-hover:scale-110 transition-transform duration-300`}
+          >
+            {icon}
+          </div>
+
+          {change !== undefined && (
+            <div
+              className={`flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                trend === "up"
+                  ? "bg-green-50 text-green-600"
+                  : "bg-red-50 text-red-600"
+              }`}
+            >
+              {trend === "up" ? "↗" : "↘"} {Math.abs(change)}%
+            </div>
           )}
-          <span>{Math.abs(change).toFixed(1)}%</span>
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            {title}
+          </p>
+          <h3 className="text-2xl font-black text-gray-900 tracking-tight leading-none overflow-hidden text-ellipsis whitespace-nowrap">
+            {value}
+          </h3>
+          {subtitle && (
+            <p className="text-[10px] font-bold text-gray-400 mt-1">
+              {subtitle}
+            </p>
+          )}
+          {description && (
+            <p className="text-[10px] text-gray-400 mt-1">{description}</p>
+          )}
         </div>
       </div>
 
-      <h3 className="text-sm text-gray-600 font-medium mb-2">{title}</h3>
-
-      <div className="flex items-baseline gap-2">
-        <p className="text-3xl font-bold text-gray-900">{value}</p>
-        {subtitle && <span className="text-sm text-gray-500">{subtitle}</span>}
-      </div>
+      {/* Background decoration */}
+      <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-gray-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700" />
     </div>
   );
 }

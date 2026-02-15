@@ -1,7 +1,6 @@
 import mongoose, { Schema, model, models, Document } from "mongoose";
 
 export interface IUser extends Document {
-  _id: string;
   name: string;
   email: string;
   phone?: string;
@@ -136,7 +135,7 @@ UserSchema.methods.updateLimitsBasedOnPlan = function () {
     },
   };
 
-  this.limits = planLimits[this.subscription.plan];
+  this.limits = (planLimits as any)[this.subscription.plan];
   return this;
 };
 

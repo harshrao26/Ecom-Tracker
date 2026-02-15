@@ -3,6 +3,7 @@
  * Fetches and aggregates data from MongoDB
  */
 
+import mongoose from "mongoose";
 import AnalyticsData from "../db/models/AnalyticsData";
 import Store from "../db/models/Store";
 
@@ -39,15 +40,31 @@ export class AnalyticsAggregator {
    * Get user's stores (filtered by storeId if provided)
    */
   static async getUserStores(userId: string, storeId: string = "all") {
-    const query: any = { userId, isActive: true };
+    try {
+      // Check if userId is a valid ObjectId
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        console.log(
+          `⚠️ Invalid ObjectId for userId: ${userId}, returning empty array`,
+        );
+        return [];
+      }
 
-    // If specific store requested
-    if (storeId !== "all") {
-      query._id = storeId;
+      const query: any = {
+        userId: new mongoose.Types.ObjectId(userId),
+        isActive: true,
+      };
+
+      // If specific store requested
+      if (storeId !== "all") {
+        query._id = storeId;
+      }
+
+      const stores = await Store.find(query).select("_id name platform");
+      return stores.map((s) => s._id.toString());
+    } catch (error) {
+      console.error("❌ Error in getUserStores:", error);
+      return [];
     }
-
-    const stores = await Store.find(query).select("_id name platform");
-    return stores.map((s) => s._id.toString());
   }
 
   /**
@@ -62,7 +79,7 @@ export class AnalyticsAggregator {
       // STEP 1: Filter by stores and date range
       {
         $match: {
-          storeId: { $in: storeIds.map((id) => id) },
+          storeId: { $in: storeIds.map((id) => new mongoose.Types.ObjectId(id)) },
           date: {
             $gte: new Date(startDate),
             $lte: new Date(endDate),
@@ -112,7 +129,7 @@ export class AnalyticsAggregator {
       // Match stores and date range
       {
         $match: {
-          storeId: { $in: storeIds.map((id) => id) },
+          storeId: { $in: storeIds.map((id) => new mongoose.Types.ObjectId(id)) },
           date: {
             $gte: new Date(startDate),
             $lte: new Date(endDate),
@@ -189,7 +206,7 @@ export class AnalyticsAggregator {
       // Match stores and date range
       {
         $match: {
-          storeId: { $in: storeIds.map((id) => id) },
+          storeId: { $in: storeIds.map((id) => new mongoose.Types.ObjectId(id)) },
           date: {
             $gte: new Date(startDate),
             $lte: new Date(endDate),
@@ -255,7 +272,9 @@ export class AnalyticsAggregator {
       // Match filters
       {
         $match: {
-          storeId: { $in: storeIds.map((id) => id) },
+          storeId: {
+            $in: storeIds.map((id) => new mongoose.Types.ObjectId(id)),
+          },
           date: { $gte: new Date(startDate), $lte: new Date(endDate) },
         },
       },

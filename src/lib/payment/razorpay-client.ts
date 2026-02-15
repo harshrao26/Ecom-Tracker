@@ -28,7 +28,7 @@ export class RazorpayClient {
     totalCount?: number;
     quantity?: number;
   }) {
-    return this.razorpay.subscriptions.create({
+    return (this.razorpay.subscriptions as any).create({
       plan_id: params.planId,
       customer_id: params.customerId,
       total_count: params.totalCount || 12, // 12 months default

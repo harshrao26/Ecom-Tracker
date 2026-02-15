@@ -113,6 +113,27 @@ export async function GET(request: NextRequest) {
         currentData.products,
       ),
       codAnalysis: AnalyticsEngine.analyzeCOD(currentData.orders),
+      inventoryHealth: AnalyticsEngine.analyzeInventoryHealth(
+        currentData.products,
+      ),
+      categoryDistribution: AnalyticsEngine.analyzeCategories(
+        currentData.products,
+      ),
+      stateData: AnalyticsEngine.analyzeByState(currentData.orders),
+      priceRangeDistribution: AnalyticsEngine.analyzePriceRanges(
+        currentData.products,
+      ),
+      discountEffectiveness: AnalyticsEngine.analyzeDiscountEffectiveness(
+        currentData.orders,
+      ),
+      pricingStrategy: AnalyticsEngine.generatePricingStrategy(
+        currentData.products,
+      ),
+      customerPurchaseFrequency:
+        AnalyticsEngine.analyzeCustomerPurchaseFrequency(currentData.customers),
+      topCustomers: AnalyticsEngine.calculateTopCustomers(
+        currentData.customers,
+      ),
 
       // Metadata
       period,

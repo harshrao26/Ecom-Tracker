@@ -76,8 +76,7 @@ interface Customer {
 }
 
 export interface IAnalyticsData extends Document {
-  _id: string;
-  storeId: string;
+  storeId: mongoose.Types.ObjectId;
   date: Date;
   orders: Order[];
   products: Product[];

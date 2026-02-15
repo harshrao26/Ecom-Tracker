@@ -1,297 +1,215 @@
 /**
  * Gemini AI Client
- * Handles interactions with Google Gemini API for analytics insights
+ * Handles interactions with Google Gemini 2.0 for structured analytics insights
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-pro";
+import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 
 export class GeminiAIClient {
-  private genAI: GoogleGenerativeAI;
-  private model: any;
+  private model: GenerativeModel;
+  private apiKey: string;
 
   constructor() {
-    if (!GEMINI_API_KEY) {
+    // STEP 1: GET API KEY FROM ENVIRONMENT
+    this.apiKey = process.env.GEMINI_API_KEY || "";
+
+    if (!this.apiKey) {
       throw new Error("GEMINI_API_KEY not found in environment variables");
     }
 
-    this.genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    this.model = this.genAI.getGenerativeModel({ model: GEMINI_MODEL });
+    // STEP 2: INITIALIZE GEMINI AI
+    const genAI = new GoogleGenerativeAI(this.apiKey);
+
+    // STEP 3: SELECT MODEL
+    // Using gemini-2.0-flash-thinking-exp-1219 for advanced reasoning
+    this.model = genAI.getGenerativeModel({
+      model: process.env.GEMINI_MODEL || "gemini-2.0-flash-thinking-exp-1219",
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 8192,
+      },
+    });
+
+    console.log("✅ Gemini AI initialized successfully");
   }
 
   /**
-   * Generate sales forecast
+   * Generate AI insight with structured prompt
    */
-  async generateSalesForecast(data: {
-    historicalRevenue: number[];
-    currentRevenue: number;
-    growthRate: number;
-    topProducts: any[];
-    seasonalTrends?: any;
-  }): Promise<string> {
-    const prompt = `
-You are an expert e-commerce analyst. Analyze this data and provide sales forecast in Hinglish (mix of Hindi and English).
+  async generateInsight(
+    prompt: string,
+    data: any,
+    options?: {
+      requireJSON?: boolean;
+      systemInstruction?: string;
+    },
+  ): Promise<any> {
+    try {
+      // STEP 1: PREPARE DATA CONTEXT
+      const dataContext = this.prepareDataContext(data);
 
-**Historical Data:**
-- Last 30 days revenue: ₹${data.currentRevenue.toLocaleString("en-IN")}
-- Growth rate: ${data.growthRate}%
-- Top products: ${data.topProducts.map((p) => `${p.name} (₹${p.revenue})`).join(", ")}
+      // STEP 2: BUILD COMPLETE PROMPT
+      const fullPrompt = this.buildPrompt(prompt, dataContext, options);
 
-**Task:** Provide a 30-day sales forecast with:
-1. Expected revenue range (conservative to optimistic)
-2. Key factors affecting forecast
-3. Seasonal considerations
-4. Action items to maximize revenue
+      // STEP 3: MAKE API CALL
+      console.log("🤖 Calling Gemini API...");
+      const startTime = Date.now();
 
-Reply in Hinglish, conversational tone. Use "aap" for addressing. Be concise but actionable.
-`;
+      const result = await this.model.generateContent(fullPrompt);
 
-    const result = await this.model.generateContent(prompt);
-    return result.response.text();
+      const endTime = Date.now();
+      console.log(`✅ Gemini response received in ${endTime - startTime}ms`);
+
+      // STEP 4: EXTRACT RESPONSE TEXT
+      const response = result.response;
+      const text = response.text();
+
+      // STEP 5: PARSE JSON IF REQUIRED
+      if (options?.requireJSON) {
+        return JSON.parse(this.extractJSON(text));
+      }
+
+      return text;
+    } catch (error) {
+      console.error("❌ Gemini API Error:", error);
+      throw new Error(
+        `AI Generation Failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   /**
-   * Generate inventory optimization recommendations
+   * Prepare data context (convert objects to readable format)
    */
-  async generateInventoryInsights(data: {
-    products: Array<{
-      name: string;
-      stock: number;
-      unitsSold: number;
-      revenue: number;
-    }>;
-    totalRevenue: number;
-  }): Promise<string> {
-    const lowStock = data.products.filter((p) => p.stock < p.unitsSold * 0.5);
-    const overstock = data.products.filter((p) => p.stock > p.unitsSold * 3);
-    const fastMoving = data.products
-      .sort((a, b) => b.unitsSold - a.unitsSold)
-      .slice(0, 5);
+  private prepareDataContext(data: any): string {
+    if (typeof data === "string") {
+      return data;
+    }
 
-    const prompt = `
-You are an inventory management expert for e-commerce. Analyze this inventory data and give recommendations in Hinglish.
-
-**Current Inventory Status:**
-- Total products: ${data.products.length}
-- Low stock items: ${lowStock.length}
-- Overstock items: ${overstock.length}
-- Fast-moving products: ${fastMoving.map((p) => `${p.name} (${p.unitsSold} units)`).join(", ")}
-
-**Low Stock Alert:**
-${lowStock
-  .slice(0, 5)
-  .map((p) => `- ${p.name}: Only ${p.stock} units left, ${p.unitsSold} sold`)
-  .join("\n")}
-
-**Overstock Alert:**
-${overstock
-  .slice(0, 5)
-  .map(
-    (p) => `- ${p.name}: ${p.stock} units in stock, only ${p.unitsSold} sold`,
-  )
-  .join("\n")}
-
-**Task:** Provide:
-1. Restocking priorities (urgent items)
-2. Overstock clearance strategies
-3. Optimal stock levels for top products
-4. Cost impact estimate
-
-Reply in Hinglish. Be specific with numbers and actionable steps.
-`;
-
-    const result = await this.model.generateContent(prompt);
-    return result.response.text();
+    // Convert to formatted JSON with indentation
+    return JSON.stringify(data, null, 2);
   }
 
   /**
-   * Generate pricing optimization suggestions
+   * Build complete prompt with instructions
    */
-  async generatePricingInsights(data: {
-    products: Array<{
-      name: string;
-      price: number;
-      cost: number;
-      profitMargin: number;
-      revenue: number;
-      competitors?: number;
-    }>;
-    avgMargin: number;
-  }): Promise<string> {
-    const lowMargin = data.products.filter((p) => p.profitMargin < 20);
-    const highValue = data.products
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
+  private buildPrompt(
+    userPrompt: string,
+    dataContext: string,
+    options?: { requireJSON?: boolean; systemInstruction?: string },
+  ): string {
+    let prompt = "";
 
-    const prompt = `
-You are a pricing strategist for Indian e-commerce. Analyze pricing data and suggest optimizations in Hinglish.
+    // SYSTEM INSTRUCTION
+    if (options?.systemInstruction) {
+      prompt += `${options.systemInstruction}\n\n`;
+    }
 
-**Current Pricing Status:**
-- Average profit margin: ${data.avgMargin}%
-- Low-margin products: ${lowMargin.length}
-- High-revenue products: ${highValue.map((p) => `${p.name} (margin: ${p.profitMargin}%)`).join(", ")}
+    // DEFAULT INSTRUCTIONS
+    prompt += `You are an expert e-commerce analytics AI assistant specializing in Indian markets.\n`;
+    prompt += `Your role is to analyze data and provide actionable, data-driven insights.\n\n`;
 
-**Products Needing Price Review:**
-${lowMargin
-  .slice(0, 5)
-  .map(
-    (p) =>
-      `- ${p.name}: Price ₹${p.price}, Cost ₹${p.cost}, Margin ${p.profitMargin}%`,
-  )
-  .join("\n")}
+    // JSON REQUIREMENT
+    if (options?.requireJSON) {
+      prompt += `CRITICAL: Your response MUST be valid JSON only. No markdown, no explanations, just pure JSON.\n\n`;
+    }
 
-**Task:** Suggest:
-1. Price increase opportunities (with justification)
-2. Discount strategies for slow-moving items
-3. Bundle pricing ideas
-4. Competitive positioning tips
-5. Expected profit impact
+    // USER PROMPT
+    prompt += `${userPrompt}\n\n`;
 
-Reply in Hinglish, practical advice for Indian market.
-`;
+    // DATA CONTEXT
+    prompt += `=== DATA ===\n${dataContext}\n\n`;
 
-    const result = await this.model.generateContent(prompt);
-    return result.response.text();
+    // JSON REMINDER
+    if (options?.requireJSON) {
+      prompt += `Remember: Return ONLY valid JSON. Start with { and end with }.`;
+    }
+
+    return prompt;
   }
 
   /**
-   * Predict customer churn and retention strategies
+   * Extract JSON from response (handles markdown code blocks)
    */
-  async generateChurnPrediction(data: {
-    customerSegments: {
-      vip: number;
-      regular: number;
-      atRisk: number;
-      churned: number;
-    };
-    vipCustomers: any[];
-    atRiskCustomers: any[];
-  }): Promise<string> {
-    const prompt = `
-You are a customer retention expert for e-commerce. Analyze customer data and provide churn prevention strategies in Hinglish.
+  private extractJSON(text: string): string {
+    // Remove markdown code blocks if present
+    let cleaned = text.trim();
 
-**Customer Segments:**
-- VIP customers: ${data.customerSegments.vip} (high value)
-- Regular customers: ${data.customerSegments.regular} (active)
-- At-risk customers: ${data.customerSegments.atRisk} (haven't ordered in 60+ days)
-- Churned customers: ${data.customerSegments.churned} (inactive 180+ days)
+    // Remove ```json and ```
+    cleaned = cleaned.replace(/```json\s*/g, "");
+    cleaned = cleaned.replace(/```\s*/g, "");
 
-**At-Risk Customers:**
-${data.atRiskCustomers
-  .slice(0, 5)
-  .map(
-    (c) =>
-      `- Customer spent ₹${c.totalSpent}, ${c.daysSinceLastOrder} days since last order`,
-  )
-  .join("\n")}
+    // Find first { and last }
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
 
-**VIP Customers (to retain):**
-${data.vipCustomers
-  .slice(0, 3)
-  .map((c) => `- ${c.totalOrders} orders, ₹${c.totalSpent} spent`)
-  .join("\n")}
+    if (firstBrace === -1 || lastBrace === -1) {
+      throw new Error("No valid JSON found in response");
+    }
 
-**Task:** Recommend:
-1. Win-back campaigns for at-risk customers
-2. VIP retention strategies
-3. Personalized offers
-4. WhatsApp/Email messaging templates
-5. Expected recovery rate
+    const jsonStr = cleaned.substring(firstBrace, lastBrace + 1);
 
-Reply in Hinglish, actionable retention tactics for Indian customers.
-`;
-
-    const result = await this.model.generateContent(prompt);
-    return result.response.text();
+    // Validate JSON
+    try {
+      JSON.parse(jsonStr);
+      return jsonStr;
+    } catch (e) {
+      throw new Error("Invalid JSON in response");
+    }
   }
 
   /**
-   * Generate comprehensive weekly/monthly report
+   * Get token count estimate
    */
-  async generatePerformanceReport(data: {
-    overview: any;
-    topProducts: any[];
-    regionalData: any[];
-    customerSegments: any;
-    codAnalysis: any;
-    period: string;
-  }): Promise<string> {
-    const prompt = `
-You are a business analyst creating a performance report for an Indian e-commerce seller. Write in Hinglish.
-
-**Period:** ${data.period}
-
-**Overview:**
-- Revenue: ₹${data.overview.totalRevenue?.toLocaleString("en-IN")}
-- Orders: ${data.overview.totalOrders}
-- Profit: ₹${data.overview.totalProfit?.toLocaleString("en-IN")} (${data.overview.profitMargin}% margin)
-- Growth: ${data.overview.revenueGrowth}% vs last period
-
-**Top Cities:**
-${data.regionalData
-  .slice(0, 3)
-  .map((r) => `- ${r.city}: ₹${r.revenue.toLocaleString("en-IN")}`)
-  .join("\n")}
-
-**Top Products:**
-${data.topProducts
-  .slice(0, 3)
-  .map((p) => `- ${p.name}: ₹${p.revenue.toLocaleString("en-IN")}`)
-  .join("\n")}
-
-**Payment Methods:**
-- COD: ${data.codAnalysis.codPercentage}%
-- Prepaid: ${100 - data.codAnalysis.codPercentage}%
-
-**Task:** Create a summary report with:
-1. 🎯 Key Highlights (3-4 points)
-2. 📈 What's Working Well
-3. ⚠️ Areas of Concern
-4. 💡 Action Items (priority wise)
-5. 🎁 Growth Opportunities
-
-Use emojis, Hinglish, conversational tone. Make it easy to read and actionable.
-`;
-
-    const result = await this.model.generateContent(prompt);
-    return result.response.text();
+  async estimateTokens(text: string): Promise<number> {
+    // Rough estimate: 1 token ≈ 4 characters
+    return Math.ceil(text.length / 4);
   }
 
-  /**
-   * Generate India-specific insights
-   */
-  async generateIndiaSpecificInsights(data: {
-    codAnalysis: any;
-    regionalData: any[];
-    gstData?: any;
-  }): Promise<string> {
-    const prompt = `
-You are an expert on Indian e-commerce market. Analyze this India-specific data and provide insights in Hinglish.
+  // --- LEGACY METHODS (Kept for compatibility during migration) ---
 
-**COD Analysis:**
-- COD orders: ${data.codAnalysis.codPercentage}%
-- COD revenue: ₹${data.codAnalysis.codRevenue?.toLocaleString("en-IN")}
+  async generateSalesForecast(data: any): Promise<string> {
+    return this.generateInsight(
+      "Analyze this data and provide 30-day sales forecast in Hinglish.",
+      data,
+    );
+  }
 
-**Top Cities:**
-${data.regionalData
-  .slice(0, 5)
-  .map((r) => `- ${r.city}, ${r.state}: ₹${r.revenue.toLocaleString("en-IN")}`)
-  .join("\n")}
+  async generateInventoryInsights(data: any): Promise<string> {
+    return this.generateInsight(
+      "Analyze inventory data and give recommendations in Hinglish.",
+      data,
+    );
+  }
 
-**Task:** Provide:
-1. COD optimization tips (reduce COD %, improve prepaid)
-2. Regional expansion suggestions
-3. Tier 2/3 city growth strategies
-4. Festival season planning
-5. India-specific payment trends
+  async generatePricingInsights(data: any): Promise<string> {
+    return this.generateInsight(
+      "Analyze pricing data and suggest optimizations in Hinglish.",
+      data,
+    );
+  }
 
-Reply in Hinglish, practical for Indian sellers.
-`;
+  async generateChurnPrediction(data: any): Promise<string> {
+    return this.generateInsight(
+      "Analyze customer data and provide churn prevention strategies in Hinglish.",
+      data,
+    );
+  }
 
-    const result = await this.model.generateContent(prompt);
-    return result.response.text();
+  async generatePerformanceReport(data: any): Promise<string> {
+    return this.generateInsight(
+      "Create a business performance report in Hinglish.",
+      data,
+    );
+  }
+
+  async generateIndiaSpecificInsights(data: any): Promise<string> {
+    return this.generateInsight(
+      "Provide India-specific e-commerce insights in Hinglish.",
+      data,
+    );
   }
 }
 
