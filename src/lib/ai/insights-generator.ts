@@ -88,6 +88,44 @@ export interface MarketingStrategy {
   }>;
 }
 
+export interface RegionalStrategy {
+  topRegions: Array<{
+    region: string;
+    revenue: number;
+    growth: number;
+    potential: string;
+  }>;
+  underperformingRegions: Array<{
+    region: string;
+    issue: string;
+    solution: string;
+  }>;
+  logisticsInsights: string[];
+  regionalPreferences: string[];
+}
+
+export interface GrowthOpportunity {
+  newCategories: string[];
+  marketGaps: string[];
+  expansionPlan: string;
+  expectedROI: string;
+}
+
+export interface CustomerBehavior {
+  buyingCycles: string;
+  peakHours: string[];
+  preferredPaymentMethods: string[];
+  avgOrderValueTrend: string;
+  loyaltyInsights: string;
+}
+
+export interface ProductStrategy {
+  heroProducts: string[];
+  inventoryWarnings: string[];
+  bundlingIdeas: string[];
+  nextBestSellers: string[];
+}
+
 export class InsightsGenerator {
   private aiClient: GeminiAIClient;
 
@@ -98,14 +136,24 @@ export class InsightsGenerator {
   /**
    * PREDICTION 1: Sales Forecasting
    */
-  async generateSalesForecast(historicalData: {
-    dailyRevenue: Array<{ date: string; revenue: number; orders: number }>;
-    period: number;
-  }): Promise<SalesForecast> {
-    console.log("📈 Generating sales forecast...");
+  async generateSalesForecast(
+    historicalData: {
+      dailyRevenue: Array<{ date: string; revenue: number; orders: number }>;
+      period: number;
+    },
+    language: "en" | "hi" = "en",
+  ): Promise<SalesForecast> {
+    console.log(`📈 Generating sales forecast in ${language}...`);
+
+    const languageInstruction =
+      language === "hi"
+        ? "IMPORTANT: Provide all textual insights, reasons, and patterns in Hinglish (Hindi written in Roman script)."
+        : "Provide all textual insights in English.";
 
     const prompt = `
 Analyze this e-commerce sales data and provide a detailed 30-day revenue forecast.
+
+${languageInstruction}
 
 ANALYSIS REQUIREMENTS:
 1. Calculate predicted revenue for next 30 days
@@ -156,11 +204,21 @@ RESPONSE FORMAT (JSON):
       revenue: number;
       margin: number;
     }>,
+    language: "en" | "hi" = "en",
   ): Promise<ProfitOptimization> {
-    console.log("💰 Generating profit optimization suggestions...");
+    console.log(
+      `💰 Generating profit optimization suggestions in ${language}...`,
+    );
+
+    const languageInstruction =
+      language === "hi"
+        ? "IMPORTANT: Provide all textual insights, reasons, and strategy names in Hinglish (Hindi written in Roman script)."
+        : "Provide all textual insights in English.";
 
     const prompt = `
 Analyze these products and suggest profit optimization strategies for Indian e-commerce.
+
+${languageInstruction}
 
 CONTEXT:
 - Total products: ${products.length}
@@ -220,16 +278,24 @@ RESPONSE FORMAT (JSON):
       avgOrderValue: number;
       city: string;
     }>,
+    language: "en" | "hi" = "en",
   ): Promise<ChurnPrediction> {
-    console.log("👥 Predicting customer churn...");
+    console.log(`👥 Predicting customer churn in ${language}...`);
 
     const customersWithDays = customers.map((c) => ({
       ...c,
       daysSinceLastPurchase: this.daysSince(c.lastPurchase),
     }));
 
+    const languageInstruction =
+      language === "hi"
+        ? "IMPORTANT: Provide all churn indicators, retention actions, and status messages in Hinglish (Hindi written in Roman script)."
+        : "Provide all textual insights in English.";
+
     const prompt = `
 Analyze these customers and predict churn risk for an Indian e-commerce store.
+
+${languageInstruction}
 
 CHURN INDICATORS:
 - Days since last purchase vs typical purchase frequency
@@ -274,16 +340,26 @@ RESPONSE FORMAT (JSON):
   /**
    * PREDICTION 4: Marketing Strategy
    */
-  async generateMarketingStrategy(analytics: {
-    customerSegments: any;
-    regionalData: any[];
-    topProducts: any[];
-    codAnalysis: any;
-  }): Promise<MarketingStrategy> {
-    console.log("📢 Generating marketing strategy...");
+  async generateMarketingStrategy(
+    analytics: {
+      customerSegments: any;
+      regionalData: any[];
+      topProducts: any[];
+      codAnalysis: any;
+    },
+    language: "en" | "hi" = "en",
+  ): Promise<MarketingStrategy> {
+    console.log(`📢 Generating marketing strategy in ${language}...`);
+
+    const languageInstruction =
+      language === "hi"
+        ? "IMPORTANT: Provide all campaign names, messaging, and strategic advice in Hinglish (Hindi written in Roman script)."
+        : "Provide all textual insights in English.";
 
     const prompt = `
 Create a comprehensive marketing strategy based on this analytics data for the Indian market.
+
+${languageInstruction}
 
 INDIAN MARKET CONTEXT:
 - Focus on tier 1, 2 cities
@@ -337,6 +413,139 @@ RESPONSE FORMAT (JSON):
     });
 
     return strategy as MarketingStrategy;
+  }
+
+  /**
+   * PREDICTION 5: Regional Strategy
+   */
+  async generateRegionalStrategy(
+    regionalData: any[],
+    language: "en" | "hi" = "en",
+  ): Promise<RegionalStrategy> {
+    console.log(`🗺️ Generating regional strategy in ${language}...`);
+
+    const languageInstruction =
+      language === "hi"
+        ? "IMPORTANT: Provide all regional potential, issue descriptions, and solutions in Hinglish (Hindi written in Roman script)."
+        : "Provide all textual insights in English.";
+
+    const prompt = `
+Analyze this regional sales data for India and provide a growth strategy.
+
+${languageInstruction}
+
+RESPONSE FORMAT (JSON):
+{
+  "topRegions": [{ "region": "...", "revenue": <number>, "growth": <number>, "potential": "..." }],
+  "underperformingRegions": [{ "region": "...", "issue": "...", "solution": "..." }],
+  "logisticsInsights": ["...", "..."],
+  "regionalPreferences": ["...", "..."]
+}
+`;
+
+    return (await this.aiClient.generateInsight(prompt, regionalData, {
+      requireJSON: true,
+    })) as RegionalStrategy;
+  }
+
+  /**
+   * PREDICTION 6: Growth Opportunities
+   */
+  async generateGrowthOpportunities(
+    analytics: any,
+    language: "en" | "hi" = "en",
+  ): Promise<GrowthOpportunity> {
+    console.log(`🚀 Generating growth opportunities in ${language}...`);
+
+    const languageInstruction =
+      language === "hi"
+        ? "IMPORTANT: Provide expansion plans, market gaps, and ROI analysis in Hinglish (Hindi written in Roman script)."
+        : "Provide all textual insights in English.";
+
+    const prompt = `
+Identify new growth opportunities for this e-commerce business in the Indian market.
+
+${languageInstruction}
+
+RESPONSE FORMAT (JSON):
+{
+  "newCategories": ["...", "..."],
+  "marketGaps": ["...", "..."],
+  "expansionPlan": "...",
+  "expectedROI": "..."
+}
+`;
+
+    return (await this.aiClient.generateInsight(prompt, analytics, {
+      requireJSON: true,
+    })) as GrowthOpportunity;
+  }
+
+  /**
+   * PREDICTION 7: Customer Behavior Analysis
+   */
+  async analyzeCustomerBehavior(
+    customerData: any,
+    language: "en" | "hi" = "en",
+  ): Promise<CustomerBehavior> {
+    console.log(`🧠 Analyzing customer behavior in ${language}...`);
+
+    const languageInstruction =
+      language === "hi"
+        ? "IMPORTANT: Provide buying cycles, loyalty insights, and trend analysis in Hinglish (Hindi written in Roman script)."
+        : "Provide all textual insights in English.";
+
+    const prompt = `
+Analyze customer behavior patterns from this data.
+
+${languageInstruction}
+
+RESPONSE FORMAT (JSON):
+{
+  "buyingCycles": "...",
+  "peakHours": ["...", "..."],
+  "preferredPaymentMethods": ["...", "..."],
+  "avgOrderValueTrend": "...",
+  "loyaltyInsights": "..."
+}
+`;
+
+    return (await this.aiClient.generateInsight(prompt, customerData, {
+      requireJSON: true,
+    })) as CustomerBehavior;
+  }
+
+  /**
+   * PREDICTION 8: Product Strategy
+   */
+  async generateProductStrategy(
+    productData: any,
+    language: "en" | "hi" = "en",
+  ): Promise<ProductStrategy> {
+    console.log(`📦 Generating product strategy in ${language}...`);
+
+    const languageInstruction =
+      language === "hi"
+        ? "IMPORTANT: Provide bundling ideas, inventory warnings, and seller tips in Hinglish (Hindi written in Roman script)."
+        : "Provide all textual insights in English.";
+
+    const prompt = `
+Recommend a product-led growth strategy.
+
+${languageInstruction}
+
+RESPONSE FORMAT (JSON):
+{
+  "heroProducts": ["...", "..."],
+  "inventoryWarnings": ["...", "..."],
+  "bundlingIdeas": ["...", "..."],
+  "nextBestSellers": ["...", "..."]
+}
+`;
+
+    return (await this.aiClient.generateInsight(prompt, productData, {
+      requireJSON: true,
+    })) as ProductStrategy;
   }
 
   // HELPER FUNCTIONS

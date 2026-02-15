@@ -13,68 +13,16 @@ import {
   FiDollarSign,
   FiMessageSquare,
   FiBarChart2,
+  FiBulb,
   FiTarget,
   FiCpu,
   FiClock,
   FiLayers,
 } from "react-icons/fi";
+import { FaRegLightbulb } from "react-icons/fa";
 
 const sidebarItems = [
-  {
-    id: "products",
-    label: "Products",
-    icon: FiBox,
-    path: "/dashboard/products",
-  },
-  {
-    id: "orders",
-    label: "Orders",
-    icon: FiShoppingBag,
-    path: "/dashboard/orders",
-  },
-  {
-    id: "returns",
-    label: "Returns",
-    icon: FiRotateCcw,
-    path: "/dashboard/returns",
-  },
-  {
-    id: "banners",
-    label: "Homepage Banners",
-    icon: FiImage,
-    path: "/dashboard/banners",
-  },
-  {
-    id: "brands",
-    label: "Featured Brands",
-    icon: FiStar,
-    path: "/dashboard/brands",
-  },
-  { id: "deals", label: "Hot Deals", icon: FiTag, path: "/dashboard/deals" },
-  {
-    id: "coupon-banners",
-    label: "Coupon Banners",
-    icon: FiLayers,
-    path: "/dashboard/coupon-banners",
-  },
-  {
-    id: "steal-deals",
-    label: "Steal Deals",
-    icon: FiDollarSign,
-    path: "/dashboard/steal-deals",
-  },
-  {
-    id: "payouts",
-    label: "Payout Requests",
-    icon: FiDollarSign,
-    path: "/dashboard/payouts",
-  },
-  {
-    id: "reviews",
-    label: "Reviews",
-    icon: FiMessageSquare,
-    path: "/dashboard/reviews",
-  },
+  
   {
     id: "analytics",
     label: "Analytics",
@@ -82,30 +30,12 @@ const sidebarItems = [
     path: "/dashboard",
   },
   {
-    id: "intel",
-    label: "Competitor Intel",
-    icon: FiTarget,
-    path: "/dashboard/intel",
+    id: "insights",
+    label: "Insights",
+    icon: FaRegLightbulb,
+    path: "/dashboard/insights",
   },
-  {
-    id: "campaigns",
-    label: "Campaigns",
-    icon: FiTarget,
-    path: "/dashboard/campaigns",
-  },
-  { id: "coupons", label: "Coupons", icon: FiTag, path: "/dashboard/coupons" },
-  {
-    id: "marketing",
-    label: "Marketing",
-    icon: FiCpu,
-    path: "/dashboard/marketing",
-  },
-  {
-    id: "pending",
-    label: "Pending Pickups",
-    icon: FiClock,
-    path: "/dashboard/pending",
-  },
+   
 ];
 
 export default function Sidebar() {

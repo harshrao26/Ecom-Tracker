@@ -9,7 +9,11 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
+  Globe,
+  Languages,
+  RotateCcw,
 } from "lucide-react";
+import { useEffect } from "react";
 
 export default function AIInsightsPage() {
   const [insights, setInsights] = useState<{
@@ -21,42 +25,66 @@ export default function AIInsightsPage() {
 
   const [generating, setGenerating] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [language, setLanguage] = useState<"en" | "hi">("en");
+  const [showLangPicker, setShowLangPicker] = useState<string | null>(null);
+  const [loadingInitial, setLoadingInitial] = useState(true);
+
+  /**
+   * Fetch saved insights from DB
+   */
+  async function fetchSavedInsights(lang: "en" | "hi") {
+    try {
+      setLoadingInitial(true);
+      const res = await fetch(`/api/ai/insights?storeId=all&language=${lang}`);
+      const result = await res.json();
+
+      if (result.success && result.data) {
+        const newInsights: any = {};
+        result.data.forEach((item: any) => {
+          newInsights[item.type] = item.content;
+        });
+        setInsights(newInsights);
+      }
+    } catch (err) {
+      console.error("Failed to fetch insights:", err);
+    } finally {
+      setLoadingInitial(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchSavedInsights(language);
+  }, [language]);
 
   /**
    * Generate specific insight
    */
-  async function generateInsight(type: string) {
+  async function generateInsight(type: string, targetLang: "en" | "hi") {
     try {
-      // STEP 1: SET LOADING STATE
+      setShowLangPicker(null);
       setGenerating((prev) => ({ ...prev, [type]: true }));
       setErrors((prev) => ({ ...prev, [type]: "" }));
 
-      console.log(`🤖 Requesting ${type} insight from AI...`);
+      console.log(`🤖 Requesting ${type} insight in ${targetLang}...`);
 
-      // STEP 2: MAKE API CALL
       const response = await fetch("/api/ai/insights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           insightType: type,
-          storeId: "all", // or specific store ID
+          storeId: "all",
+          language: targetLang,
         }),
       });
 
-      // STEP 3: HANDLE RESPONSE
       const result = await response.json();
 
       if (!result.success) {
         throw new Error(result.error || "Failed to generate insight");
       }
 
-      // STEP 4: UPDATE STATE
       setInsights((prev) => ({ ...prev, [type]: result.data }));
-
-      console.log(
-        `✅ ${type} insight received:`,
-        result.cached ? "from cache" : "freshly generated",
-      );
+      console.log(`✅ ${type} insight saved & updated in DB`);
     } catch (error) {
       console.error(`❌ Error generating ${type} insight:`, error);
       setErrors((prev) => ({
@@ -70,16 +98,43 @@ export default function AIInsightsPage() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto bg-gray-50 min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-2 tracking-tight">
-          🤖 AI-Powered Predictions
-        </h1>
-        <p className="text-lg text-gray-600">
-          Advanced e-commerce intelligence powered by{" "}
-          <span className="text-blue-600 font-semibold">
-            Google Gemini 2.0 Flash
-          </span>
-        </p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-2 tracking-tight">
+            🤖 AI Prediction Center
+          </h1>
+          <p className="text-lg text-gray-600">
+            E-commerce intelligence powered by{" "}
+            <span className="text-blue-600 font-semibold">
+              Gemini 1.5 Flash
+            </span>
+          </p>
+        </div>
+
+        <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-200">
+          <button
+            onClick={() => setLanguage("en")}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center ${
+              language === "en"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-100"
+                : "text-gray-500 hover:bg-gray-50"
+            }`}
+          >
+            <Globe className="w-4 h-4 mr-2" />
+            English
+          </button>
+          <button
+            onClick={() => setLanguage("hi")}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center ${
+              language === "hi"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-100"
+                : "text-gray-500 hover:bg-gray-50"
+            }`}
+          >
+            <Languages className="w-4 h-4 mr-2" />
+            Hinglish
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -100,24 +155,53 @@ export default function AIInsightsPage() {
               </div>
             </div>
 
-            <button
-              onClick={() => generateInsight("forecast")}
-              disabled={generating.forecast}
-              className={`flex items-center px-6 py-2.5 rounded-xl font-bold transition-all ${
-                generating.forecast
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95 shadow-lg shadow-blue-200"
-              }`}
-            >
-              {generating.forecast ? (
-                <>
-                  <Loader2 className="animate-spin mr-2" />
-                  Analyzing...
-                </>
-              ) : (
-                "🤖 Forecast"
+            <div className="relative">
+              <button
+                onClick={() =>
+                  setShowLangPicker(
+                    showLangPicker === "forecast" ? null : "forecast",
+                  )
+                }
+                disabled={generating.forecast}
+                className={`flex items-center px-6 py-2.5 rounded-xl font-bold transition-all ${
+                  generating.forecast
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95 shadow-lg shadow-blue-200"
+                }`}
+              >
+                {generating.forecast ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Generate
+                  </>
+                )}
+              </button>
+
+              {showLangPicker === "forecast" && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50">
+                  <p className="text-[10px] font-black uppercase text-gray-400 px-3 py-2 tracking-widest leading-none">
+                    Choose Language
+                  </p>
+                  <button
+                    onClick={() => generateInsight("forecast", "en")}
+                    className="w-full text-left px-4 py-3 hover:bg-blue-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
+                  >
+                    English Insight
+                  </button>
+                  <button
+                    onClick={() => generateInsight("forecast", "hi")}
+                    className="w-full text-left px-4 py-3 hover:bg-blue-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
+                  >
+                    Hinglish Insight
+                  </button>
+                </div>
               )}
-            </button>
+            </div>
           </div>
 
           {errors.forecast && (
@@ -204,24 +288,53 @@ export default function AIInsightsPage() {
               </div>
             </div>
 
-            <button
-              onClick={() => generateInsight("profit")}
-              disabled={generating.profit}
-              className={`flex items-center px-6 py-2.5 rounded-xl font-bold transition-all ${
-                generating.profit
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-green-600 text-white hover:bg-green-700 active:scale-95 shadow-lg shadow-green-200"
-              }`}
-            >
-              {generating.profit ? (
-                <>
-                  <Loader2 className="animate-spin mr-2" />
-                  Optimizing...
-                </>
-              ) : (
-                "🤖 Optimize"
+            <div className="relative">
+              <button
+                onClick={() =>
+                  setShowLangPicker(
+                    showLangPicker === "profit" ? null : "profit",
+                  )
+                }
+                disabled={generating.profit}
+                className={`flex items-center px-6 py-2.5 rounded-xl font-bold transition-all ${
+                  generating.profit
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-green-600 text-white hover:bg-green-700 active:scale-95 shadow-lg shadow-green-200"
+                }`}
+              >
+                {generating.profit ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2" />
+                    Optimizing...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Generate
+                  </>
+                )}
+              </button>
+
+              {showLangPicker === "profit" && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50">
+                  <p className="text-[10px] font-black uppercase text-gray-400 px-3 py-2 tracking-widest leading-none">
+                    Choose Language
+                  </p>
+                  <button
+                    onClick={() => generateInsight("profit", "en")}
+                    className="w-full text-left px-4 py-3 hover:bg-green-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
+                  >
+                    English Insight
+                  </button>
+                  <button
+                    onClick={() => generateInsight("profit", "hi")}
+                    className="w-full text-left px-4 py-3 hover:bg-green-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
+                  >
+                    Hinglish Insight
+                  </button>
+                </div>
               )}
-            </button>
+            </div>
           </div>
 
           {insights.profit ? (
@@ -286,24 +399,51 @@ export default function AIInsightsPage() {
               </div>
             </div>
 
-            <button
-              onClick={() => generateInsight("churn")}
-              disabled={generating.churn}
-              className={`flex items-center px-6 py-2.5 rounded-xl font-bold transition-all ${
-                generating.churn
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-red-600 text-white hover:bg-red-700 active:scale-95 shadow-lg shadow-red-200"
-              }`}
-            >
-              {generating.churn ? (
-                <>
-                  <Loader2 className="animate-spin mr-2" />
-                  Predicting...
-                </>
-              ) : (
-                "🤖 Predict"
+            <div className="relative">
+              <button
+                onClick={() =>
+                  setShowLangPicker(showLangPicker === "churn" ? null : "churn")
+                }
+                disabled={generating.churn}
+                className={`flex items-center px-6 py-2.5 rounded-xl font-bold transition-all ${
+                  generating.churn
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-red-600 text-white hover:bg-red-700 active:scale-95 shadow-lg shadow-red-200"
+                }`}
+              >
+                {generating.churn ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2" />
+                    Predicting...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Generate
+                  </>
+                )}
+              </button>
+
+              {showLangPicker === "churn" && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50">
+                  <p className="text-[10px] font-black uppercase text-gray-400 px-3 py-2 tracking-widest leading-none">
+                    Choose Language
+                  </p>
+                  <button
+                    onClick={() => generateInsight("churn", "en")}
+                    className="w-full text-left px-4 py-3 hover:bg-red-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
+                  >
+                    English Insight
+                  </button>
+                  <button
+                    onClick={() => generateInsight("churn", "hi")}
+                    className="w-full text-left px-4 py-3 hover:bg-red-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
+                  >
+                    Hinglish Insight
+                  </button>
+                </div>
               )}
-            </button>
+            </div>
           </div>
 
           {insights.churn ? (
@@ -380,24 +520,53 @@ export default function AIInsightsPage() {
               </div>
             </div>
 
-            <button
-              onClick={() => generateInsight("marketing")}
-              disabled={generating.marketing}
-              className={`flex items-center px-6 py-2.5 rounded-xl font-bold transition-all ${
-                generating.marketing
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-purple-600 text-white hover:bg-purple-700 active:scale-95 shadow-lg shadow-purple-200"
-              }`}
-            >
-              {generating.marketing ? (
-                <>
-                  <Loader2 className="animate-spin mr-2" />
-                  Strategizing...
-                </>
-              ) : (
-                "🤖 Strategize"
+            <div className="relative">
+              <button
+                onClick={() =>
+                  setShowLangPicker(
+                    showLangPicker === "marketing" ? null : "marketing",
+                  )
+                }
+                disabled={generating.marketing}
+                className={`flex items-center px-6 py-2.5 rounded-xl font-bold transition-all ${
+                  generating.marketing
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-purple-600 text-white hover:bg-purple-700 active:scale-95 shadow-lg shadow-purple-200"
+                }`}
+              >
+                {generating.marketing ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2" />
+                    Strategizing...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Generate
+                  </>
+                )}
+              </button>
+
+              {showLangPicker === "marketing" && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50">
+                  <p className="text-[10px] font-black uppercase text-gray-400 px-3 py-2 tracking-widest leading-none">
+                    Choose Language
+                  </p>
+                  <button
+                    onClick={() => generateInsight("marketing", "en")}
+                    className="w-full text-left px-4 py-3 hover:bg-purple-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
+                  >
+                    English Insight
+                  </button>
+                  <button
+                    onClick={() => generateInsight("marketing", "hi")}
+                    className="w-full text-left px-4 py-3 hover:bg-purple-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
+                  >
+                    Hinglish Insight
+                  </button>
+                </div>
               )}
-            </button>
+            </div>
           </div>
 
           {insights.marketing ? (
