@@ -12,6 +12,17 @@ import {
   Globe,
   Languages,
   RotateCcw,
+  Map,
+  Rocket,
+  Brain,
+  Box,
+  Zap,
+  Search,
+  ShieldCheck,
+  Truck,
+  FileText,
+  MessageSquare,
+  BarChart4,
 } from "lucide-react";
 import { useEffect } from "react";
 
@@ -21,12 +32,23 @@ export default function AIInsightsPage() {
     profit?: any;
     churn?: any;
     marketing?: any;
+    regional?: any;
+    growth?: any;
+    behavior?: any;
+    product?: any;
+    geo?: any;
+    zeroClick?: any;
+    logistics?: any;
+    content?: any;
+    sentiment?: any;
+    benchmark?: any;
   }>({});
 
   const [generating, setGenerating] = useState<Record<string, boolean>>({});
+  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [language, setLanguage] = useState<"en" | "hi">("en");
-  const [showLangPicker, setShowLangPicker] = useState<string | null>(null);
+  const [showLangPicker, setShowLangPicker] = useState<boolean>(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
 
   /**
@@ -57,21 +79,21 @@ export default function AIInsightsPage() {
   }, [language]);
 
   /**
-   * Generate specific insight
+   * grll Insights at once
    */
-  async function generateInsight(type: string, targetLang: "en" | "hi") {
+  async function generateAllInsights(targetLang: "en" | "hi") {
     try {
-      setShowLangPicker(null);
-      setGenerating((prev) => ({ ...prev, [type]: true }));
-      setErrors((prev) => ({ ...prev, [type]: "" }));
+      setIsGeneratingAll(true);
+      setShowLangPicker(false);
+      setErrors({});
 
-      console.log(`🤖 Requesting ${type} insight in ${targetLang}...`);
+      console.log(`🤖 Requesting UNIFIED intelligence in ${targetLang}...`);
 
       const response = await fetch("/api/ai/insights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          insightType: type,
+          insightType: "all",
           storeId: "all",
           language: targetLang,
         }),
@@ -80,531 +102,704 @@ export default function AIInsightsPage() {
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.error || "Failed to generate insight");
+        throw new Error(
+          result.error || "Failed to generate unified intelligence",
+        );
       }
 
-      setInsights((prev) => ({ ...prev, [type]: result.data }));
-      console.log(`✅ ${type} insight saved & updated in DB`);
+      // Update state with all results
+      setInsights({
+        forecast: result.data.forecast,
+        profit: result.data.profit,
+        churn: result.data.churn,
+        marketing: result.data.marketing,
+        regional: result.data.regional,
+        growth: result.data.growth,
+        behavior: result.data.behavior,
+        product: result.data.product,
+        geo: result.data.geo,
+        zeroClick: result.data.zeroClick,
+        logistics: result.data.logistics,
+        content: result.data.content,
+        sentiment: result.data.sentiment,
+        benchmark: result.data.benchmark,
+      });
+
+      console.log(`✅ All 14 intelligence modules updated & saved in DB`);
     } catch (error) {
-      console.error(`❌ Error generating ${type} insight:`, error);
-      setErrors((prev) => ({
-        ...prev,
-        [type]: error instanceof Error ? error.message : String(error),
-      }));
+      console.error(`❌ Error generating unified intelligence:`, error);
+      setErrors({
+        global: error instanceof Error ? error.message : "Generation failed",
+      });
     } finally {
-      setGenerating((prev) => ({ ...prev, [type]: false }));
+      setIsGeneratingAll(false);
     }
   }
 
+  /**
+   * Helper to render a module card
+   */
+  const ModuleCard = ({
+    title,
+    subtitle,
+    icon: Icon,
+    data,
+    type,
+    colorClass = "blue",
+    children,
+  }: any) => {
+    // Utility to get Tailwind classes safely
+    const colorStyles: any = {
+      blue: {
+        bg: "bg-blue-50",
+        icon: "text-blue-600",
+        border: "border-blue-100",
+      },
+      orange: {
+        bg: "bg-orange-50",
+        icon: "text-orange-600",
+        border: "border-orange-100",
+      },
+      green: {
+        bg: "bg-green-50",
+        icon: "text-green-600",
+        border: "border-green-100",
+      },
+      red: { bg: "bg-red-50", icon: "text-red-600", border: "border-red-100" },
+      indigo: {
+        bg: "bg-indigo-50",
+        icon: "text-indigo-600",
+        border: "border-indigo-100",
+      },
+      pink: {
+        bg: "bg-pink-50",
+        icon: "text-pink-600",
+        border: "border-pink-100",
+      },
+      cyan: {
+        bg: "bg-cyan-50",
+        icon: "text-cyan-600",
+        border: "border-cyan-100",
+      },
+      purple: {
+        bg: "bg-purple-50",
+        icon: "text-purple-600",
+        border: "border-purple-100",
+      },
+    };
+
+    const style = colorStyles[colorClass] || colorStyles.blue;
+
+    return (
+      <section className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100/80 hover:shadow-md transition-all flex flex-col h-full">
+        <div className="flex items-center mb-6">
+          <div className={`p-3 ${style.bg} rounded-2xl mr-4`}>
+            <Icon className={`w-8 h-8 ${style.icon}`} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 leading-none mb-1">
+              {title}
+            </h2>
+            <p className="text-xs text-gray-400 font-medium">{subtitle}</p>
+          </div>
+        </div>
+
+        {data ? (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 flex-grow">
+            {children}
+          </div>
+        ) : (
+          <div className="flex-grow flex flex-col items-center justify-center py-12 text-gray-300 border-2 border-dashed border-gray-50 rounded-2xl">
+            <Icon className="w-10 h-10 mb-2 opacity-10" />
+            <p className="text-xs font-bold tracking-tight uppercase">
+              Waiting for Analysis
+            </p>
+          </div>
+        )}
+      </section>
+    );
+  };
+
   return (
-    <div className="p-8 max-w-7xl mx-auto bg-gray-50 min-h-screen">
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="p-8 mx-auto bg-gray-50 min-h-screen">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-2 tracking-tight">
-            🤖 AI Prediction Center
+          <h1 className="text-4xl font-black text-gray-900 mb-2 flex items-center tracking-tighter">
+            <Zap className="mr-3 text-blue-600 fill-blue-600 w-10 h-10" />
+            AI Intelligence Hub
           </h1>
-          <p className="text-lg text-gray-600">
-            E-commerce intelligence powered by{" "}
-            <span className="text-blue-600 font-semibold">
+          <p className="text-gray-500 font-medium text-lg">
+            Real-time business strategy generated by{" "}
+            <span className="font-bold text-gray-900 border-b-2 border-blue-200">
               Gemini 1.5 Flash
             </span>
           </p>
         </div>
 
-        <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-200">
-          <button
-            onClick={() => setLanguage("en")}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center ${
-              language === "en"
-                ? "bg-blue-600 text-white shadow-md shadow-blue-100"
-                : "text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            <Globe className="w-4 h-4 mr-2" />
-            English
-          </button>
-          <button
-            onClick={() => setLanguage("hi")}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center ${
-              language === "hi"
-                ? "bg-blue-600 text-white shadow-md shadow-blue-100"
-                : "text-gray-500 hover:bg-gray-50"
-            }`}
-          >
-            <Languages className="w-4 h-4 mr-2" />
-            Hinglish
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="flex bg-white/80 backdrop-blur-sm p-1 rounded-2xl shadow-sm border border-gray-200">
+            <button
+              onClick={() => setLanguage("en")}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center ${
+                language === "en"
+                  ? "bg-blue-600 text-white shadow-xl shadow-blue-200 scale-105"
+                  : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              <Globe className="w-4 h-4 mr-2" />
+              English
+            </button>
+            <button
+              onClick={() => setLanguage("hi")}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center ${
+                language === "hi"
+                  ? "bg-blue-600 text-white shadow-xl shadow-blue-200 scale-105"
+                  : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              <Languages className="w-4 h-4 mr-2" />
+              Hinglish
+            </button>
+          </div>
+
+          <div className="relative">
+            <button
+              onClick={() => setShowLangPicker(!showLangPicker)}
+              disabled={isGeneratingAll}
+              className={`flex items-center px-8 py-3 rounded-2xl font-black text-sm tracking-wide transition-all ${
+                isGeneratingAll
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-gray-900 text-white hover:bg-black active:scale-95 shadow-2xl shadow-gray-200"
+              }`}
+            >
+              {isGeneratingAll ? (
+                <>
+                  <Loader2 className="animate-spin mr-3 w-5 h-5" />
+                  Generating All...
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="w-4 h-4 mr-3" />
+                  Generate Insights
+                </>
+              )}
+            </button>
+
+            {showLangPicker && (
+              <div className="absolute right-0 mt-3 w-56 bg-white rounded-3xl shadow-2xl border border-gray-100 p-3 z-50 animate-in zoom-in-95 duration-200">
+                <p className="text-[10px] font-black uppercase text-gray-400 px-4 py-3 tracking-widest leading-none">
+                  Select Strategy Language
+                </p>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => generateAllInsights("en")}
+                    className="w-full text-left px-5 py-4 hover:bg-blue-50 rounded-2xl text-sm font-bold text-gray-800 transition-all flex items-center"
+                  >
+                    <Globe className="w-4 h-4 mr-3 text-blue-600" />
+                    English Report
+                  </button>
+                  <button
+                    onClick={() => generateAllInsights("hi")}
+                    className="w-full text-left px-5 py-4 hover:bg-blue-50 rounded-2xl text-sm font-bold text-gray-800 transition-all flex items-center"
+                  >
+                    <Languages className="w-4 h-4 mr-3 text-blue-600" />
+                    Hinglish Report
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* SALES FORECAST CARD */}
-        <section className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-blue-50 rounded-2xl mr-4">
-                <TrendingUp className="w-8 h-8 text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Sales Forecast
-                </h2>
-                <p className="text-sm text-gray-500">
-                  30-day revenue prediction
+      {errors.global && (
+        <div className="bg-red-50 border-2 border-red-100 rounded-3xl p-5 mb-8 flex items-center animate-in slide-in-from-top-4">
+          <AlertCircle className="text-red-600 w-6 h-6 mr-4" />
+          <p className="text-red-800 font-bold">{errors.global}</p>
+        </div>
+      )}
+
+      {loadingInitial ? (
+        <div className="py-32 flex flex-col items-center justify-center">
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+          <p className="text-gray-400 font-black uppercase tracking-widest text-xs">
+            Hydrating Intelligence...
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+          {/* 1. SALES FORECAST */}
+          <ModuleCard
+            title="Revenue Forecast"
+            subtitle="30-day AI prediction"
+            icon={TrendingUp}
+            data={insights.forecast}
+            colorClass="blue"
+          >
+            <div className="space-y-6">
+              <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-100">
+                <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-1">
+                  Expected Revenue
+                </p>
+                <p className="text-2xl font-black text-blue-900">
+                  ₹{insights.forecast?.predictedRevenue?.toLocaleString()}
                 </p>
               </div>
-            </div>
-
-            <div className="relative">
-              <button
-                onClick={() =>
-                  setShowLangPicker(
-                    showLangPicker === "forecast" ? null : "forecast",
-                  )
-                }
-                disabled={generating.forecast}
-                className={`flex items-center px-6 py-2.5 rounded-xl font-bold transition-all ${
-                  generating.forecast
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95 shadow-lg shadow-blue-200"
-                }`}
-              >
-                {generating.forecast ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Generate
-                  </>
-                )}
-              </button>
-
-              {showLangPicker === "forecast" && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50">
-                  <p className="text-[10px] font-black uppercase text-gray-400 px-3 py-2 tracking-widest leading-none">
-                    Choose Language
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-green-50/50 rounded-xl p-3 border border-green-100">
+                  <p className="text-[9px] font-bold text-green-700 uppercase mb-1">
+                    Growth
                   </p>
-                  <button
-                    onClick={() => generateInsight("forecast", "en")}
-                    className="w-full text-left px-4 py-3 hover:bg-blue-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
-                  >
-                    English Insight
-                  </button>
-                  <button
-                    onClick={() => generateInsight("forecast", "hi")}
-                    className="w-full text-left px-4 py-3 hover:bg-blue-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
-                  >
-                    Hinglish Insight
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {errors.forecast && (
-            <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-6 flex items-start">
-              <AlertCircle className="text-red-600 mt-1 mr-3 flex-shrink-0" />
-              <p className="text-red-800 text-sm font-medium">
-                {errors.forecast}
-              </p>
-            </div>
-          )}
-
-          {insights.forecast ? (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="grid grid-cols-3 gap-4 mb-8">
-                <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-100">
-                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-1">
-                    Predicted Revenue
-                  </p>
-                  <p className="text-xl font-black text-blue-900">
-                    ₹{insights.forecast.predictedRevenue.toLocaleString()}
+                  <p className="text-lg font-black text-green-900">
+                    +{insights.forecast?.growthRate}%
                   </p>
                 </div>
-                <div className="bg-green-50/50 rounded-2xl p-4 border border-green-100">
-                  <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1">
-                    Growth Rate
-                  </p>
-                  <p className="text-xl font-black text-green-900">
-                    +{insights.forecast.growthRate}%
-                  </p>
-                </div>
-                <div className="bg-purple-50/50 rounded-2xl p-4 border border-purple-100">
-                  <p className="text-xs font-semibold text-purple-700 uppercase tracking-wider mb-1">
+                <div className="bg-purple-50/50 rounded-xl p-3 border border-purple-100">
+                  <p className="text-[9px] font-bold text-purple-700 uppercase mb-1">
                     Confidence
                   </p>
-                  <p className="text-xl font-black text-purple-900">
-                    {insights.forecast.confidence}%
+                  <p className="text-lg font-black text-purple-900">
+                    {insights.forecast?.confidence}%
                   </p>
                 </div>
               </div>
-
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center">
-                    <CheckCircle className="text-blue-500 mr-2" /> Patterns
-                    Detected
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {insights.forecast.seasonalPatterns.map(
-                      (p: string, i: number) => (
-                        <span
-                          key={i}
-                          className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs font-bold"
-                        >
-                          {p}
-                        </span>
-                      ),
-                    )}
-                  </div>
-                </div>
-              </div>
             </div>
-          ) : (
-            <div className="py-12 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
-              <TrendingUp className="w-12 h-12 mb-3 opacity-20" />
-              <p className="text-sm font-medium">No forecast generated yet</p>
-            </div>
-          )}
-        </section>
+          </ModuleCard>
 
-        {/* PROFIT OPTIMIZATION CARD */}
-        <section className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-50 rounded-2xl mr-4">
-                <DollarSign className="w-8 h-8 text-green-600" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Profit Strategies
-                </h2>
-                <p className="text-sm text-gray-500">
-                  Pricing & margin optimization
-                </p>
-              </div>
-            </div>
-
-            <div className="relative">
-              <button
-                onClick={() =>
-                  setShowLangPicker(
-                    showLangPicker === "profit" ? null : "profit",
-                  )
-                }
-                disabled={generating.profit}
-                className={`flex items-center px-6 py-2.5 rounded-xl font-bold transition-all ${
-                  generating.profit
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-green-600 text-white hover:bg-green-700 active:scale-95 shadow-lg shadow-green-200"
-                }`}
-              >
-                {generating.profit ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2" />
-                    Optimizing...
-                  </>
-                ) : (
-                  <>
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Generate
-                  </>
-                )}
-              </button>
-
-              {showLangPicker === "profit" && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50">
-                  <p className="text-[10px] font-black uppercase text-gray-400 px-3 py-2 tracking-widest leading-none">
-                    Choose Language
-                  </p>
-                  <button
-                    onClick={() => generateInsight("profit", "en")}
-                    className="w-full text-left px-4 py-3 hover:bg-green-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
-                  >
-                    English Insight
-                  </button>
-                  <button
-                    onClick={() => generateInsight("profit", "hi")}
-                    className="w-full text-left px-4 py-3 hover:bg-green-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
-                  >
-                    Hinglish Insight
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {insights.profit ? (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
-              {insights.profit.increasePrice?.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center">
-                    <TrendingUp className="text-green-500 mr-2" /> Increase
-                    Price Opportunities
-                  </h3>
-                  <div className="space-y-3">
-                    {insights.profit.increasePrice
-                      .slice(0, 2)
-                      .map((item: any, i: number) => (
-                        <div
-                          key={i}
-                          className="p-4 bg-green-50/50 border border-green-100 rounded-2xl"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-bold text-gray-900 leading-tight">
-                              {item.productName}
-                            </h4>
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg font-black">
-                              +
-                              {Math.round(
-                                ((item.suggestedPrice - item.currentPrice) /
-                                  item.currentPrice) *
-                                  100,
-                              )}
-                              %
-                            </span>
-                          </div>
-                          <p className="text-xs text-green-700 font-medium line-clamp-2">
-                            {item.reason}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="py-12 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
-              <DollarSign className="w-12 h-12 mb-3 opacity-20" />
-              <p className="text-sm font-medium">No results generated yet</p>
-            </div>
-          )}
-        </section>
-
-        {/* CHURN PREDICTION CARD */}
-        <section className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-red-50 rounded-2xl mr-4">
-                <Users className="w-8 h-8 text-red-600" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Churn Risk</h2>
-                <p className="text-sm text-gray-500">
-                  At-risk customer identification
-                </p>
-              </div>
-            </div>
-
-            <div className="relative">
-              <button
-                onClick={() =>
-                  setShowLangPicker(showLangPicker === "churn" ? null : "churn")
-                }
-                disabled={generating.churn}
-                className={`flex items-center px-6 py-2.5 rounded-xl font-bold transition-all ${
-                  generating.churn
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-red-600 text-white hover:bg-red-700 active:scale-95 shadow-lg shadow-red-200"
-                }`}
-              >
-                {generating.churn ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2" />
-                    Predicting...
-                  </>
-                ) : (
-                  <>
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Generate
-                  </>
-                )}
-              </button>
-
-              {showLangPicker === "churn" && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50">
-                  <p className="text-[10px] font-black uppercase text-gray-400 px-3 py-2 tracking-widest leading-none">
-                    Choose Language
-                  </p>
-                  <button
-                    onClick={() => generateInsight("churn", "en")}
-                    className="w-full text-left px-4 py-3 hover:bg-red-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
-                  >
-                    English Insight
-                  </button>
-                  <button
-                    onClick={() => generateInsight("churn", "hi")}
-                    className="w-full text-left px-4 py-3 hover:bg-red-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
-                  >
-                    Hinglish Insight
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {insights.churn ? (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="bg-red-50 rounded-2xl p-6 mb-6">
-                <div className="flex items-end justify-between mb-2">
-                  <p className="text-sm font-bold text-red-800">
-                    High Risk Customers
-                  </p>
-                  <p className="text-4xl font-black text-red-600">
-                    {insights.churn.highRiskCustomers.length}
-                  </p>
-                </div>
-                <div className="w-full bg-red-200 rounded-full h-2">
-                  <div
-                    className="bg-red-600 h-2 rounded-full"
-                    style={{ width: "65%" }}
-                  ></div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {insights.churn.highRiskCustomers
-                  .slice(0, 3)
-                  .map((customer: any, i: number) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between p-3 border-b border-gray-50"
-                    >
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-600 mr-3">
-                          {customer.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-900 leading-none">
-                            {customer.name}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Last seen {customer.daysSinceLastPurchase}d ago
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-black text-red-600">
-                          {customer.churnRisk}% Risk
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ) : (
-            <div className="py-12 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
-              <Users className="w-12 h-12 mb-3 opacity-20" />
-              <p className="text-sm font-medium">No results generated yet</p>
-            </div>
-          )}
-        </section>
-
-        {/* MARKETING STRATEGY CARD */}
-        <section className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-purple-50 rounded-2xl mr-4">
-                <Target className="w-8 h-8 text-purple-600" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Growth Strategy
-                </h2>
-                <p className="text-sm text-gray-500">
-                  Target campaigns & budgets
-                </p>
-              </div>
-            </div>
-
-            <div className="relative">
-              <button
-                onClick={() =>
-                  setShowLangPicker(
-                    showLangPicker === "marketing" ? null : "marketing",
-                  )
-                }
-                disabled={generating.marketing}
-                className={`flex items-center px-6 py-2.5 rounded-xl font-bold transition-all ${
-                  generating.marketing
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-purple-600 text-white hover:bg-purple-700 active:scale-95 shadow-lg shadow-purple-200"
-                }`}
-              >
-                {generating.marketing ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2" />
-                    Strategizing...
-                  </>
-                ) : (
-                  <>
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Generate
-                  </>
-                )}
-              </button>
-
-              {showLangPicker === "marketing" && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50">
-                  <p className="text-[10px] font-black uppercase text-gray-400 px-3 py-2 tracking-widest leading-none">
-                    Choose Language
-                  </p>
-                  <button
-                    onClick={() => generateInsight("marketing", "en")}
-                    className="w-full text-left px-4 py-3 hover:bg-purple-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
-                  >
-                    English Insight
-                  </button>
-                  <button
-                    onClick={() => generateInsight("marketing", "hi")}
-                    className="w-full text-left px-4 py-3 hover:bg-purple-50 rounded-xl text-sm font-bold text-gray-700 transition-colors"
-                  >
-                    Hinglish Insight
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {insights.marketing ? (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
-              {insights.marketing.campaigns
-                .slice(0, 2)
-                .map((campaign: any, i: number) => (
+          {/* 2. REGIONAL STRATEGY */}
+          <ModuleCard
+            title="Regional Strategy"
+            subtitle="Localized performance"
+            icon={Map}
+            data={insights.regional}
+            colorClass="orange"
+          >
+            <div className="space-y-3">
+              {insights.regional?.topRegions
+                ?.slice(0, 2)
+                .map((r: any, i: number) => (
                   <div
                     key={i}
-                    className="p-5 border border-purple-100 bg-purple-50/30 rounded-3xl"
+                    className="p-3 bg-orange-50/30 border border-orange-100 rounded-xl"
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      <h4 className="font-extrabold text-purple-900 text-lg leading-tight">
-                        {campaign.name}
-                      </h4>
-                      <span className="text-xs font-black text-white bg-purple-600 px-3 py-1 rounded-full">
-                        {campaign.roi} ROI
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="text-sm font-black text-gray-900">
+                        {r.region}
+                      </p>
+                      <span className="text-[10px] font-bold text-orange-600">
+                        +{r.growth}%
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div className="text-xs font-bold text-purple-700 bg-white px-3 py-2 rounded-xl border border-purple-100">
-                        Channel: {campaign.channel}
-                      </div>
-                      <div className="text-xs font-bold text-purple-700 bg-white px-3 py-2 rounded-xl border border-purple-100">
-                        Budget: ₹{campaign.budget.toLocaleString()}
-                      </div>
+                    <p className="text-[10px] text-orange-800 font-medium leading-tight">
+                      {r.potential}
+                    </p>
+                  </div>
+                ))}
+            </div>
+          </ModuleCard>
+
+          {/* 3. PRICE OPTIMIZATION */}
+          <ModuleCard
+            title="Price Optimization"
+            subtitle="Margin maximization"
+            icon={DollarSign}
+            data={insights.profit}
+            colorClass="green"
+          >
+            <div className="space-y-3">
+              {insights.profit?.increasePrice
+                ?.slice(0, 2)
+                .map((p: any, i: number) => (
+                  <div
+                    key={i}
+                    className="p-3 bg-green-50/30 border border-green-100 rounded-xl"
+                  >
+                    <p className="text-[11px] font-black text-gray-900  mb-1">
+                      {p.productName}
+                    </p>
+                    <p className="text-[10px] text-green-700 font-bold">
+                      Suggested: ₹{p.suggestedPrice}
+                    </p>
+                  </div>
+                ))}
+            </div>
+          </ModuleCard>
+
+          {/* 4. RISK ASSESSMENT */}
+          <ModuleCard
+            title="Risk Assessment"
+            subtitle="Churn & threat analysis"
+            icon={Users}
+            data={insights.churn}
+            colorClass="red"
+          >
+            <div className="bg-red-50 p-4 rounded-2xl border border-red-100 text-center mb-4">
+              <p className="text-[10px] font-black text-red-700 uppercase tracking-widest mb-1">
+                High Risk Customers
+              </p>
+              <p className="text-3xl font-black text-red-600">
+                {insights.churn?.highRiskCustomers?.length || 0}
+              </p>
+            </div>
+            <p className="text-[11px] text-red-800 font-bold text-center leading-tight">
+              Revenue at risk: ₹
+              {insights.churn?.revenueAtRisk?.toLocaleString()}
+            </p>
+          </ModuleCard>
+
+          {/* 5. GROWTH OPPORTUNITY */}
+          <ModuleCard
+            title="Growth Opportunity"
+            subtitle="Expansion roadmap"
+            icon={Rocket}
+            data={insights.growth}
+            colorClass="indigo"
+          >
+            <div className="space-y-2">
+              <p className="text-[10px] font-black text-indigo-700 uppercase tracking-widest mb-2">
+                New Categories
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {insights.growth?.newCategories
+                  ?.slice(0, 3)
+                  .map((cat: string, i: number) => (
+                    <span
+                      key={i}
+                      className="px-3 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-black rounded-lg border border-indigo-100"
+                    >
+                      {cat}
+                    </span>
+                  ))}
+              </div>
+              <p className="text-[11px] text-gray-600 font-medium leading-tight mt-3">
+                {insights.growth?.expansionPlan?.slice(0, 80)}...
+              </p>
+            </div>
+          </ModuleCard>
+
+          {/* 6. CUSTOMER BEHAVIOR */}
+          <ModuleCard
+            title="Customer Behavior"
+            subtitle="Buying psychology"
+            icon={Brain}
+            data={insights.behavior}
+            colorClass="pink"
+          >
+            <div className="space-y-4">
+              <div className="p-3 bg-pink-50/30 border border-pink-100 rounded-xl">
+                <p className="text-[10px] font-black text-pink-700 uppercase mb-1">
+                  Peak Buying Time
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {insights.behavior?.peakHours
+                    ?.slice(0, 2)
+                    .map((h: string, i: number) => (
+                      <span
+                        key={i}
+                        className="text-xs font-black text-pink-900"
+                      >
+                        {h}
+                      </span>
+                    ))}
+                </div>
+              </div>
+              <p className="text-[11px] text-pink-800 font-bold italic">
+                "{insights.behavior?.loyaltyInsights?.slice(0, 60)}..."
+              </p>
+            </div>
+          </ModuleCard>
+
+          {/* 7. PRODUCT STRATEGY */}
+          <ModuleCard
+            title="Product Strategy"
+            subtitle="SKU-level performance"
+            icon={Box}
+            data={insights.product}
+            colorClass="cyan"
+          >
+            <div className="space-y-3">
+              <p className="text-[10px] font-black text-cyan-700 uppercase mb-2">
+                Next Best Sellers
+              </p>
+              {insights.product?.nextBestSellers
+                ?.slice(0, 2)
+                .map((p: string, i: number) => (
+                  <div
+                    key={i}
+                    className="flex items-center p-2 bg-white border border-cyan-100 rounded-xl"
+                  >
+                    <div className="w-2 h-2 bg-cyan-400 rounded-full mr-2 shadow-sm" />
+                    <p className="text-[11px] font-bold text-gray-800 ">{p}</p>
+                  </div>
+                ))}
+            </div>
+          </ModuleCard>
+
+          {/* 8. MARKETING STRATEGY */}
+          <ModuleCard
+            title="Marketing Tactics"
+            subtitle="Ad spend & campaigns"
+            icon={Target}
+            data={insights.marketing}
+            colorClass="purple"
+          >
+            <div className="space-y-3">
+              {insights.marketing?.campaigns
+                ?.slice(0, 2)
+                .map((c: any, i: number) => (
+                  <div
+                    key={i}
+                    className="p-3 bg-purple-50/30 border border-purple-100 rounded-xl"
+                  >
+                    <p className="text-[11px] font-black text-purple-900 mb-1">
+                      {c.name}
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] font-bold text-purple-600">
+                        {c.channel}
+                      </span>
+                      <span className="text-[9px] font-black bg-purple-100 px-2 py-0.5 rounded text-purple-700">
+                        {c.roi} ROI
+                      </span>
                     </div>
                   </div>
                 ))}
             </div>
-          ) : (
-            <div className="py-12 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-100 rounded-3xl">
-              <Target className="w-12 h-12 mb-3 opacity-20" />
-              <p className="text-sm font-medium">No strategy generated yet</p>
+          </ModuleCard>
+          {/* 9. GEO CITATION TRACKER */}
+          <ModuleCard
+            title="GEO Citation"
+            subtitle="AI Engine Visibility"
+            icon={Search}
+            data={insights.geo}
+            colorClass="blue"
+          >
+            <div className="space-y-4">
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-[10px] font-black text-blue-700 uppercase mb-1">
+                    Share of Voice
+                  </p>
+                  <p className="text-2xl font-black text-blue-900">
+                    {insights.geo?.shareOfVoice}%
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-blue-700 uppercase mb-1">
+                    Sentiment
+                  </p>
+                  <p className="text-lg font-black text-blue-600">
+                    {insights.geo?.sentimentScore}%
+                  </p>
+                </div>
+              </div>
+              <p className="text-[11px] text-gray-600 font-medium leading-tight">
+                {insights.geo?.visibilityGap?.slice(0, 80)}...
+              </p>
             </div>
-          )}
-        </section>
-      </div>
+          </ModuleCard>
+
+          {/* 10. ZERO-CLICK READINESS */}
+          <ModuleCard
+            title="Zero-Click Auditor"
+            subtitle="2026 AI Agent Readyness"
+            icon={ShieldCheck}
+            data={insights.zeroClick}
+            colorClass="green"
+          >
+            <div className="space-y-4">
+              <div className="bg-green-50 p-3 rounded-xl border border-green-100 flex items-center justify-between">
+                <span className="text-[10px] font-black text-green-700 uppercase">
+                  Audit Score
+                </span>
+                <span className="text-xl font-black text-green-900">
+                  {insights.zeroClick?.auditScore}%
+                </span>
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-gray-400 uppercase mb-2">
+                  Missing Metadata
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {insights.zeroClick?.missingMetadata
+                    ?.slice(0, 2)
+                    .map((m: string, i: number) => (
+                      <span
+                        key={i}
+                        className="px-2 py-0.5 bg-red-50 text-red-600 text-[9px] font-bold rounded border border-red-100 uppercase"
+                      >
+                        {m}
+                      </span>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </ModuleCard>
+
+          {/* 11. LOGISTICS RISK */}
+          <ModuleCard
+            title="Logistics Risk"
+            subtitle="Supply chain intelligence"
+            icon={Truck}
+            data={insights.logistics}
+            colorClass="orange"
+          >
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black text-orange-700 uppercase">
+                  Transit Risk
+                </p>
+                <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-orange-500"
+                    style={{
+                      width: `${insights.logistics?.transitRiskScore}%`,
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="p-3 bg-white border border-orange-100 rounded-xl">
+                <p className="text-[10px] font-black text-gray-900 mb-1">
+                  Stock-Out Warning
+                </p>
+                <p className="text-[11px] text-orange-700 font-bold">
+                  {insights.logistics?.stockOutRisks?.[0]?.name || "None"} by{" "}
+                  {insights.logistics?.stockOutRisks?.[0]?.estimatedDate ||
+                    "N/A"}
+                </p>
+              </div>
+            </div>
+          </ModuleCard>
+
+          {/* 12. NLP CONTENT PIPELINE */}
+          <ModuleCard
+            title="Content Pipeline"
+            subtitle="High-converting assets"
+            icon={FileText}
+            data={insights.content}
+            colorClass="purple"
+          >
+            <div className="space-y-4">
+              <div className="p-3 bg-purple-50/50 border border-purple-100 rounded-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 px-2 py-0.5 bg-purple-600 text-[8px] text-white font-black uppercase">
+                  Ad Copy
+                </div>
+                <p className="text-[11px] font-black text-purple-900 mb-1 leading-tight">
+                  {insights.content?.adCopy?.headline?.slice(0, 40)}...
+                </p>
+                <p className="text-[9px] text-purple-700 font-medium line-clamp-2">
+                  {insights.content?.adCopy?.body}
+                </p>
+              </div>
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="font-black text-gray-400">STATUS</span>
+                <span className="font-black text-green-600 flex items-center">
+                  <CheckCircle className="w-3 h-3 mr-1" /> READY
+                </span>
+              </div>
+            </div>
+          </ModuleCard>
+
+          {/* 13. REVIEW SENTIMENT */}
+          <ModuleCard
+            title="Review Sentiment"
+            subtitle="Customer emotional triggers"
+            icon={MessageSquare}
+            data={insights.sentiment}
+            colorClass="pink"
+          >
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-pink-700 uppercase">
+                  Overall Sentiment
+                </span>
+                <span className="text-xl font-black text-pink-900">
+                  {insights.sentiment?.overallSentiment}%
+                </span>
+              </div>
+              <div className="flex gap-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-green-500"
+                  style={{
+                    width: `${insights.sentiment?.emotionalScore?.positive}%`,
+                  }}
+                />
+                <div
+                  className="h-full bg-gray-400"
+                  style={{
+                    width: `${insights.sentiment?.emotionalScore?.neutral}%`,
+                  }}
+                />
+                <div
+                  className="h-full bg-red-500"
+                  style={{
+                    width: `${insights.sentiment?.emotionalScore?.negative}%`,
+                  }}
+                />
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-gray-400 uppercase">
+                  Top Triggers
+                </p>
+                <p className="text-[11px] text-gray-700 font-medium italic">
+                  "{insights.sentiment?.topTriggers?.[0]}"
+                </p>
+              </div>
+            </div>
+          </ModuleCard>
+
+          {/* 14. MARKET BENCHMARKING */}
+          <ModuleCard
+            title="Market Benchmark"
+            subtitle="Industry vs Store Ranking"
+            icon={BarChart4}
+            data={insights.benchmark}
+            colorClass="indigo"
+          >
+            <div className="space-y-4">
+              <div className="bg-indigo-900 text-white p-4 rounded-2xl shadow-lg relative overflow-hidden">
+                <div className="relative z-10">
+                  <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest mb-1">
+                    Market Percentile
+                  </p>
+                  <p className="text-3xl font-black">
+                    Top {100 - (insights.benchmark?.marketPercentile || 0)}%
+                  </p>
+                </div>
+                <div className="absolute -right-4 -bottom-4 opacity-20">
+                  <BarChart4 className="w-20 h-20" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-center">
+                  <p className="text-[8px] font-bold text-gray-400 uppercase">
+                    Growth
+                  </p>
+                  <p className="text-[10px] font-black text-green-600 uppercase">
+                    {insights.benchmark?.competitorComparison?.growth}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[8px] font-bold text-gray-400 uppercase">
+                    Pricing
+                  </p>
+                  <p className="text-[10px] font-black text-indigo-600 uppercase">
+                    {insights.benchmark?.competitorComparison?.pricing}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[8px] font-bold text-gray-400 uppercase">
+                    Retention
+                  </p>
+                  <p className="text-[10px] font-black text-blue-600 uppercase">
+                    {insights.benchmark?.competitorComparison?.retention}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </ModuleCard>
+        </div>
+      )}
     </div>
   );
 }

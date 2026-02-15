@@ -126,6 +126,65 @@ export interface ProductStrategy {
   nextBestSellers: string[];
 }
 
+export interface GEOCitation {
+  shareOfVoice: number;
+  sentimentScore: number;
+  topCitations: Array<{ platform: string; context: string; impact: string }>;
+  visibilityGap: string;
+}
+
+export interface ZeroClickReadiness {
+  auditScore: number;
+  missingMetadata: string[];
+  agentAccessibility: string;
+  optimizationSteps: string[];
+}
+
+export interface SupplyChainIntelligence {
+  stockOutRisks: Array<{
+    productId: string;
+    name: string;
+    estimatedDate: string;
+  }>;
+  regionalBottlenecks: Array<{ region: string; issue: string }>;
+  transitRiskScore: number;
+  recommendations: string[];
+}
+
+export interface NLPContentPipeline {
+  adCopy: {
+    headline: string;
+    body: string;
+    cta: string;
+  };
+  socialHooks: string[];
+  blogDraft: string;
+  marketingPhase: string;
+}
+
+export interface SentimentAnalysis {
+  overallSentiment: number; // 0-100
+  topTriggers: string[];
+  recurringComplaints: string[];
+  emotionalScore: {
+    positive: number;
+    neutral: number;
+    negative: number;
+  };
+  recommendations: string[];
+}
+
+export interface MarketBenchmarking {
+  marketPercentile: number;
+  competitorComparison: {
+    pricing: "lower" | "average" | "higher";
+    growth: "lagging" | "on-par" | "leading";
+    retention: "low" | "standard" | "high";
+  };
+  shareOfVoice: number;
+  strategicAdvantage: string;
+}
+
 export class InsightsGenerator {
   private aiClient: GeminiAIClient;
 
@@ -546,6 +605,203 @@ RESPONSE FORMAT (JSON):
     return (await this.aiClient.generateInsight(prompt, productData, {
       requireJSON: true,
     })) as ProductStrategy;
+  }
+
+  /**
+   * PREDICTION 9: GEO Citation Tracker (2026 Tier)
+   */
+  async generateGEOCitation(
+    brandData: any,
+    language: "en" | "hi" = "en",
+  ): Promise<GEOCitation> {
+    console.log(`🌐 Generating GEO citation report in ${language}...`);
+
+    const languageInstruction =
+      language === "hi"
+        ? "IMPORTANT: Provide all visibility gaps and impact analysis in Hinglish (Hindi written in Roman script)."
+        : "Provide all textual insights in English.";
+
+    const prompt = `
+Analyze this brand's visibility in AI Search Engines (ChatGPT, Perplexity, Claude, AI Overviews).
+
+${languageInstruction}
+
+RESPONSE FORMAT (JSON):
+{
+  "shareOfVoice": <number 0-100>,
+  "sentimentScore": <number 0-100>,
+  "topCitations": [{ "platform": "...", "context": "...", "impact": "..." }],
+  "visibilityGap": "..."
+}
+`;
+
+    return (await this.aiClient.generateInsight(prompt, brandData, {
+      requireJSON: true,
+    })) as GEOCitation;
+  }
+
+  /**
+   * PREDICTION 10: Zero-Click Readiness (2026 Tier)
+   */
+  async analyzeZeroClickReadiness(
+    productMetadata: any,
+    language: "en" | "hi" = "en",
+  ): Promise<ZeroClickReadiness> {
+    console.log(`🤖 Analyzing zero-click readiness in ${language}...`);
+
+    const languageInstruction =
+      language === "hi"
+        ? "IMPORTANT: Provide optimization steps and accessibility notes in Hinglish (Hindi written in Roman script)."
+        : "Provide all textual insights in English.";
+
+    const prompt = `
+Audit this store's technical SEO and Schema.org metadata for AI agent readability.
+
+${languageInstruction}
+
+RESPONSE FORMAT (JSON):
+{
+  "auditScore": <number 0-100>,
+  "missingMetadata": ["...", "..."],
+  "agentAccessibility": "...",
+  "optimizationSteps": ["...", "..."]
+}
+`;
+
+    return (await this.aiClient.generateInsight(prompt, productMetadata, {
+      requireJSON: true,
+    })) as ZeroClickReadiness;
+  }
+
+  /**
+   * PREDICTION 11: Supply Chain & Logistics (2026 Tier)
+   */
+  async analyzeSupplyChainLogistics(
+    logisticsData: any,
+    language: "en" | "hi" = "en",
+  ): Promise<SupplyChainIntelligence> {
+    console.log(`📦 Analyzing logistics intelligence in ${language}...`);
+
+    const languageInstruction =
+      language === "hi"
+        ? "IMPORTANT: Provide regional bottleneck descriptions and recommendations in Hinglish (Hindi written in Roman script)."
+        : "Provide all textual insights in English.";
+
+    const prompt = `
+Predict logistics risks and supply chain bottlenecks for the Indian market.
+
+${languageInstruction}
+
+RESPONSE FORMAT (JSON):
+{
+  "stockOutRisks": [{ "productId": "...", "name": "...", "estimatedDate": "..." }],
+  "regionalBottlenecks": [{ "region": "...", "issue": "..." }],
+  "transitRiskScore": <number 0-100>,
+  "recommendations": ["...", "..."]
+}
+`;
+
+    return (await this.aiClient.generateInsight(prompt, logisticsData, {
+      requireJSON: true,
+    })) as SupplyChainIntelligence;
+  }
+
+  /**
+   * PREDICTION 12: Automated NLP Content Pipeline (2026 Tier)
+   */
+  async generateAutomatedNLPContent(
+    marketingStrategy: any,
+    language: "en" | "hi" = "en",
+  ): Promise<NLPContentPipeline> {
+    console.log(`✍️ Generating NLP content assets in ${language}...`);
+
+    const languageInstruction =
+      language === "hi"
+        ? "CRITICAL: The adCopy, socialHooks, and blogDraft MUST be in high-converting Hinglish (Hindi written in Roman script)."
+        : "Provide all content in English.";
+
+    const prompt = `
+Generate ready-to-use marketing content based on the provided strategy.
+
+${languageInstruction}
+
+RESPONSE FORMAT (JSON):
+{
+  "adCopy": { "headline": "...", "body": "...", "cta": "..." },
+  "socialHooks": ["...", "..."],
+  "blogDraft": "...",
+  "marketingPhase": "..."
+}
+`;
+
+    return (await this.aiClient.generateInsight(prompt, marketingStrategy, {
+      requireJSON: true,
+    })) as NLPContentPipeline;
+  }
+
+  /**
+   * PREDICTION 13: Review Sentiment Trends (Fulfills Diagram)
+   */
+  async analyzeSentimentTrends(
+    reviewData: any,
+    language: "en" | "hi" = "en"
+  ): Promise<SentimentAnalysis> {
+    console.log(`💬 Analyzing review sentiment in ${language}...`);
+
+    const languageInstruction = language === "hi" 
+      ? "IMPORTANT: Provide all triggers, complaints, and recommendations in Hinglish (Hindi written in Roman script)."
+      : "Provide all textual insights in English.";
+
+    const prompt = `
+Analyze customer feedback and reviews to extract sentiment and emotional triggers.
+
+${languageInstruction}
+
+RESPONSE FORMAT (JSON):
+{
+  "overallSentiment": <0-100>,
+  "topTriggers": ["...", "..."],
+  "recurringComplaints": ["...", "..."],
+  "emotionalScore": { "positive": <number>, "neutral": <number>, "negative": <number> },
+  "recommendations": ["...", "..."]
+}
+`;
+
+    return (await this.aiClient.generateInsight(prompt, reviewData, { requireJSON: true })) as SentimentAnalysis;
+  }
+
+  /**
+   * PREDICTION 14: Market Benchmarking (Fulfills Diagram)
+   */
+  async generateMarketBenchmarking(
+    storePerformance: any,
+    language: "en" | "hi" = "en"
+  ): Promise<MarketBenchmarking> {
+    console.log(`📊 Generating market benchmarking in ${language}...`);
+
+    const languageInstruction = language === "hi" 
+      ? "IMPORTANT: Provide strategic advantage and comparison notes in Hinglish (Hindi written in Roman script)."
+      : "Provide all textual insights in English.";
+
+    const prompt = `
+Compare this seller's performance against industry standard e-commerce benchmarks (India region).
+
+${languageInstruction}
+
+RESPONSE FORMAT (JSON):
+{
+  "marketPercentile": <number>,
+  "competitorComparison": {
+    "pricing": "lower" | "average" | "higher",
+    "growth": "lagging" | "on-par" | "leading",
+    "retention": "low" | "standard" | "high"
+  },
+  "shareOfVoice": <number>,
+  "strategicAdvantage": "..."
+}
+`;
+
+    return (await this.aiClient.generateInsight(prompt, storePerformance, { requireJSON: true })) as MarketBenchmarking;
   }
 
   // HELPER FUNCTIONS

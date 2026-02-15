@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IInsight extends Document {
   userId: string;
   storeId: string;
-  type: "forecast" | "profit" | "churn" | "marketing" | "regional" | "growth" | "behavior" | "product" | "all";
+  type: "forecast" | "profit" | "churn" | "marketing" | "regional" | "growth" | "behavior" | "product" | "geo" | "zeroClick" | "logistics" | "content" | "sentiment" | "benchmark" | "all";
   language: "en" | "hi";
   content: any;
   legacyFormat?: any;
@@ -23,7 +23,7 @@ const InsightSchema: Schema = new Schema(
     type: {
       type: String,
       required: true,
-      enum: ["forecast", "profit", "churn", "marketing", "regional", "growth", "behavior", "product", "all"],
+      enum: ["forecast", "profit", "churn", "marketing", "regional", "growth", "behavior", "product", "geo", "zeroClick", "logistics", "content", "sentiment", "benchmark", "all"],
     },
     language: {
       type: String,

@@ -47,7 +47,7 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("Last Year");
+  const [period, setPeriod] = useState("Today");
   const [activeTab, setActiveTab] = useState("Overview");
 
   // TODO: Replace with actual user session
@@ -62,9 +62,20 @@ export default function DashboardPage() {
       setLoading(true);
       setError(null);
 
+      // Map display period to API period
+      const periodMap: Record<string, string> = {
+        Today: "today",
+        Yesterday: "yesterday",
+        "Last Week": "7d",
+        "Last 30 Days": "30d",
+        "Month to Date": "mtd",
+        "Year to Date": "ytd",
+        "Last Year": "1y",
+      };
+
       const params = new URLSearchParams({
         userId,
-        period: period === "Last Year" ? "1y" : "30d",
+        period: periodMap[period] || "30d",
         storeId: "all",
       });
 
@@ -136,7 +147,12 @@ export default function DashboardPage() {
               onChange={(e) => setPeriod(e.target.value)}
               className="bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl focus:outline-none focus:ring-2 ring-white/30 cursor-pointer hover:bg-white/20 transition-all"
             >
+              <option className="bg-blue-600">Today</option>
+              <option className="bg-blue-600">Yesterday</option>
+              <option className="bg-blue-600">Last Week</option>
               <option className="bg-blue-600">Last 30 Days</option>
+              <option className="bg-blue-600">Month to Date</option>
+              <option className="bg-blue-600">Year to Date</option>
               <option className="bg-blue-600">Last Year</option>
             </select>
 
@@ -451,9 +467,6 @@ export default function DashboardPage() {
       )}
 
       {/* Bottom Insights */}
-      <div className="pb-12">
-        <AIInsights userId={userId} period={"30d"} storeId={"all"} />
-      </div>
     </div>
   );
 }
