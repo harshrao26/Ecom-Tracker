@@ -42,6 +42,7 @@ interface Order {
   total: number;
   currency: string;
   status: string;
+  returnReason?: string;
   paymentMethod: "prepaid" | "cod";
   customer: CustomerInfo;
   items: OrderItem[];
@@ -106,6 +107,7 @@ const AnalyticsDataSchema = new Schema<IAnalyticsData>(
         total: { type: Number, required: true },
         currency: { type: String, default: "INR" },
         status: { type: String, required: true },
+        returnReason: String,
         paymentMethod: {
           type: String,
           enum: ["prepaid", "cod"],

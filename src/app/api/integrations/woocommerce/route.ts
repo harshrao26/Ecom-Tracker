@@ -3,6 +3,7 @@ import WooCommerceClient from "@/lib/integrations/woocommerce/client";
 import connectDB from "@/lib/db/connection";
 import Store from "@/lib/db/models/Store";
 import User from "@/lib/db/models/User";
+import { getSession } from "@/lib/auth";
 
 /**
  * POST /api/integrations/woocommerce
@@ -10,16 +11,21 @@ import User from "@/lib/db/models/User";
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.userId;
     await connectDB();
 
     const body = await request.json();
-    const { userId, siteUrl, consumerKey, consumerSecret, storeName } = body;
+    const { siteUrl, consumerKey, consumerSecret, storeName } = body;
 
-    if (!userId || !siteUrl || !consumerKey || !consumerSecret) {
+    if (!siteUrl || !consumerKey || !consumerSecret) {
       return NextResponse.json(
         {
-          error:
-            "userId, siteUrl, consumerKey, and consumerSecret are required",
+          error: "siteUrl, consumerKey, and consumerSecret are required",
         },
         { status: 400 },
       );
@@ -131,17 +137,13 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "userId is required" },
-        { status: 400 },
-      );
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const userId = session.userId;
+    await connectDB();
 
     const stores = await Store.find({
       userId,

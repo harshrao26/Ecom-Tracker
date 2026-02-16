@@ -3,6 +3,7 @@ import connectDB from "@/lib/db/connection";
 import RazorpayClient from "@/lib/payment/razorpay-client";
 import User from "@/lib/db/models/User";
 import Subscription from "@/lib/db/models/Subscription";
+import { getSession } from "@/lib/auth";
 
 /**
  * POST /api/subscriptions/create
@@ -10,16 +11,19 @@ import Subscription from "@/lib/db/models/Subscription";
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.userId;
     await connectDB();
 
     const body = await request.json();
-    const { userId, plan } = body;
+    const { plan } = body;
 
-    if (!userId || !plan) {
-      return NextResponse.json(
-        { error: "userId and plan are required" },
-        { status: 400 },
-      );
+    if (!plan) {
+      return NextResponse.json({ error: "plan is required" }, { status: 400 });
     }
 
     // Get user
@@ -132,17 +136,13 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "userId is required" },
-        { status: 400 },
-      );
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const userId = session.userId;
+    await connectDB();
 
     const subscription = await Subscription.findOne({
       userId,

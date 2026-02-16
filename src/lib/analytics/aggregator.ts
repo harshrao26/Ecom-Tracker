@@ -79,7 +79,9 @@ export class AnalyticsAggregator {
       // STEP 1: Filter by stores and date range
       {
         $match: {
-          storeId: { $in: storeIds.map((id) => new mongoose.Types.ObjectId(id)) },
+          storeId: {
+            $in: storeIds.map((id) => new mongoose.Types.ObjectId(id)),
+          },
           date: {
             $gte: new Date(startDate),
             $lte: new Date(endDate),
@@ -101,6 +103,7 @@ export class AnalyticsAggregator {
           date: "$orders.date",
           total: "$orders.total",
           status: "$orders.status",
+          returnReason: "$orders.returnReason",
           paymentMethod: "$orders.paymentMethod",
           customer: "$orders.customer",
           items: "$orders.items",
@@ -129,7 +132,9 @@ export class AnalyticsAggregator {
       // Match stores and date range
       {
         $match: {
-          storeId: { $in: storeIds.map((id) => new mongoose.Types.ObjectId(id)) },
+          storeId: {
+            $in: storeIds.map((id) => new mongoose.Types.ObjectId(id)),
+          },
           date: {
             $gte: new Date(startDate),
             $lte: new Date(endDate),
@@ -206,7 +211,9 @@ export class AnalyticsAggregator {
       // Match stores and date range
       {
         $match: {
-          storeId: { $in: storeIds.map((id) => new mongoose.Types.ObjectId(id)) },
+          storeId: {
+            $in: storeIds.map((id) => new mongoose.Types.ObjectId(id)),
+          },
           date: {
             $gte: new Date(startDate),
             $lte: new Date(endDate),

@@ -3,6 +3,7 @@ import crypto from "crypto";
 import ShopifyClient from "@/lib/integrations/shopify/client";
 import connectDB from "@/lib/db/connection";
 import Store from "@/lib/db/models/Store";
+import { getSession } from "@/lib/auth";
 
 /**
  * GET /api/integrations/shopify
@@ -10,15 +11,17 @@ import Store from "@/lib/db/models/Store";
  */
 export async function GET(request: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.userId;
     const { searchParams } = new URL(request.url);
     const shop = searchParams.get("shop");
-    const userId = searchParams.get("userId");
 
-    if (!shop || !userId) {
-      return NextResponse.json(
-        { error: "Shop and userId are required" },
-        { status: 400 },
-      );
+    if (!shop) {
+      return NextResponse.json({ error: "Shop is required" }, { status: 400 });
     }
 
     // Validate shop format (should be mystore.myshopify.com)
@@ -67,14 +70,20 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.userId;
     await connectDB();
 
     const body = await request.json();
-    const { userId, shop, accessToken, storeName } = body;
+    const { shop, accessToken, storeName } = body;
 
-    if (!userId || !shop || !accessToken) {
+    if (!shop || !accessToken) {
       return NextResponse.json(
-        { error: "userId, shop, and accessToken are required" },
+        { error: "shop and accessToken are required" },
         { status: 400 },
       );
     }

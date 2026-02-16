@@ -1,15 +1,8 @@
-/**
- * Demo Data Seeding Script
- * Seeds the database with realistic Indian e-commerce data for testing
- *
- * Run: npx tsx scripts/seed-demo-data.ts
- */
+import * as dotenv from "dotenv";
+import path from "path";
 
-import mongoose from "mongoose";
-import User from "../src/lib/db/models/User";
-import Store from "../src/lib/db/models/Store";
-import AnalyticsData from "../src/lib/db/models/AnalyticsData";
-import connectDB from "../src/lib/db/connection";
+// Load environment variables from .env.local IMMEDIATELY
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
 // Demo user credentials
 const DEMO_USER = {
@@ -69,6 +62,19 @@ const CUSTOMER_NAMES = [
   "Riya Kapoor",
 ];
 
+// Return reasons
+const RETURN_REASONS = [
+  "Size/Fit Issue",
+  "Damaged Product",
+  "Wrong Item Received",
+  "Quality Not as Expected",
+  "Better Price Elsewhere",
+  "Changed Mind",
+  "RTO - Customer Not Available",
+  "RTO - Refused Delivery",
+  "RTO - Incorrect Address",
+];
+
 function randomElement<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -103,24 +109,47 @@ function generateOrders(count: number, startDate: Date, endDate: Date) {
     const gstAmount = subtotal * gstRate;
     const total = subtotal + gstAmount + shippingCost;
 
-    // Split GST (CGST + SGST for intrastate, IGST for interstate)
     const isInterstate = Math.random() < 0.3;
     const cgst = isInterstate ? 0 : gstAmount / 2;
     const sgst = isInterstate ? 0 : gstAmount / 2;
     const igst = isInterstate ? gstAmount : 0;
+
+    // Status and Return logic
+    let status = randomElement([
+      "completed",
+      "completed",
+      "completed",
+      "completed",
+      "pending",
+      "cancelled",
+      "returned",
+      "rto",
+    ]);
+
+    // Prepaid orders have lower RTO/Return rates in India
+    const paymentMethod = isCOD ? "cod" : "prepaid";
+    if (paymentMethod === "prepaid" && (status === "returned" || status === "rto")) {
+      if (Math.random() < 0.7) status = "completed"; // 70% chance to flip back to completed if prepaid
+    }
+
+    let returnReason = undefined;
+    if (status === "returned") {
+      returnReason = randomElement(
+        RETURN_REASONS.filter((r) => !r.startsWith("RTO")),
+      );
+    } else if (status === "rto") {
+      returnReason = randomElement(
+        RETURN_REASONS.filter((r) => r.startsWith("RTO")),
+      );
+    }
 
     orders.push({
       orderId: `ORD-${Date.now()}-${i}`,
       platformOrderId: `${randomInt(1000, 9999)}`,
       date: randomDate(startDate, endDate),
       total,
-      status: randomElement([
-        "completed",
-        "completed",
-        "completed",
-        "pending",
-        "cancelled",
-      ]),
+      status,
+      returnReason,
       paymentMethod: isCOD ? "cod" : "prepaid",
       customer: {
         id: `CUST-${randomInt(1000, 9999)}`,
@@ -208,6 +237,13 @@ async function seedDatabase() {
   try {
     console.log("🚀 Starting demo data seeding...");
 
+    // Dynamic imports to ensure dotenv.config() has run first
+    const connectDB = (await import("../src/lib/db/connection")).default;
+    const User = (await import("../src/lib/db/models/User")).default;
+    const Store = (await import("../src/lib/db/models/Store")).default;
+    const AnalyticsData = (await import("../src/lib/db/models/AnalyticsData"))
+      .default;
+
     // Connect to MongoDB
     await connectDB();
     console.log("✅ Connected to MongoDB");
@@ -238,37 +274,39 @@ async function seedDatabase() {
 
     // Create stores
     console.log("🏪 Creating demo stores...");
-    const stores = await Store.create([
-      {
-        userId: user._id,
-        name: "Fashion Paradise (Shopify)",
-        platform: "shopify",
-        platformStoreId: "shopify-store-123",
-        credentials: {
-          shopDomain: "fashion-paradise.myshopify.com",
-          accessToken: "demo-token-encrypted",
-        },
-        isActive: true,
-        syncStatus: "synced",
-        lastSyncedAt: new Date(),
-      },
-      {
-        userId: user._id,
-        name: "TechHub India (WooCommerce)",
-        platform: "woocommerce",
-        platformStoreId: "woo-store-456",
-        credentials: {
-          storeUrl: "https://techhub-india.com",
-          consumerKey: "ck_demo_key_encrypted",
-          consumerSecret: "cs_demo_secret_encrypted",
-        },
-        isActive: true,
-        syncStatus: "synced",
-        lastSyncedAt: new Date(),
-      },
-    ]);
+    const shopifyStore = new Store({
+      userId: user._id,
+      name: "Fashion Paradise (Shopify)",
+      platform: "shopify",
+      platformStoreId: "shopify-store-123",
+      isActive: true,
+      syncStatus: { status: "active", lastSync: new Date() },
+    });
+    shopifyStore.saveEncryptedCredentials({
+      shopUrl: "fashion-paradise.myshopify.com",
+      accessToken: "demo-token-placeholder",
+    });
+    await shopifyStore.save();
 
-    console.log(`   ✅ Created ${stores.length} stores`);
+    const wooStore = new Store({
+      userId: user._id,
+      name: "TechHub India (WooCommerce)",
+      platform: "woocommerce",
+      platformStoreId: "woo-store-456",
+      isActive: true,
+      syncStatus: { status: "active", lastSync: new Date() },
+    });
+    wooStore.saveEncryptedCredentials({
+      siteUrl: "https://techhub-india.com",
+      consumerKey: "ck_demo_key_placeholder",
+      consumerSecret: "cs_demo_secret_placeholder",
+    });
+    await wooStore.save();
+
+    const stores = [shopifyStore, wooStore];
+    console.log(
+      `   ✅ Created ${stores.length} stores with encrypted credentials`,
+    );
 
     // Generate analytics data for last 90 days
     console.log("📊 Generating analytics data...");

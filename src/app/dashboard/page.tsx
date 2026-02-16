@@ -6,6 +6,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import MetricCard from "@/components/dashboard/MetricCard";
 import RevenueTrend from "@/components/dashboard/RevenueTrend";
 import OrderStatusPie from "@/components/dashboard/OrderStatusPie";
@@ -29,6 +30,9 @@ import ProductInsights from "@/components/dashboard/ProductInsights";
 import FastMovingProducts from "@/components/dashboard/FastMovingProducts";
 import ProductProfitabilityChart from "@/components/dashboard/ProductProfitabilityChart";
 import AIInsights from "@/components/dashboard/AIInsights";
+import RTOCityChart from "@/components/dashboard/RTOCityChart";
+import CODReturnCorrelation from "@/components/dashboard/CODReturnCorrelation";
+import ReturnReasonsChart from "@/components/dashboard/ReturnReasonsChart";
 import {
   FiTrendingUp,
   FiShoppingBag,
@@ -40,6 +44,8 @@ import {
   FiPackage,
   FiClock,
   FiCpu,
+  FiRotateCcw,
+  FiLogOut,
 } from "react-icons/fi";
 import Link from "next/link";
 
@@ -50,8 +56,7 @@ export default function DashboardPage() {
   const [period, setPeriod] = useState("Today");
   const [activeTab, setActiveTab] = useState("Overview");
 
-  // TODO: Replace with actual user session
-  const userId = "6991fdaa767d73422e21e18d";
+  const router = useRouter();
 
   useEffect(() => {
     fetchAnalytics();
@@ -74,7 +79,6 @@ export default function DashboardPage() {
       };
 
       const params = new URLSearchParams({
-        userId,
         period: periodMap[period] || "30d",
         storeId: "all",
       });
@@ -93,6 +97,15 @@ export default function DashboardPage() {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
     }
   }
 
@@ -117,6 +130,7 @@ export default function DashboardPage() {
     { id: "Pricing", icon: FiDollarSign },
     { id: "Customers", icon: FiUsers },
     { id: "Products", icon: FiPackage },
+    { id: "Returns", icon: FiRotateCcw },
     { id: "Time Analysis", icon: FiClock },
   ];
 
@@ -164,6 +178,14 @@ export default function DashboardPage() {
                 AI Predictions
               </button>
             </Link>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:bg-white/20 transition-all active:scale-95"
+            >
+              <FiLogOut size={14} />
+              Sign Out
+            </button>
           </div>
         </div>
 
@@ -447,6 +469,138 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Returns Tab Content */}
+      {activeTab === "Returns" && (
+        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                Total RTOs
+              </p>
+              <h4 className="text-3xl font-black text-gray-900">
+                {analytics.returnsAndRTO?.rtoCount || 0}
+              </h4>
+              <p className="text-[10px] font-bold text-orange-500 mt-1 uppercase tracking-widest">
+                {analytics.returnsAndRTO?.rtoRate}% RTO Rate
+              </p>
+            </div>
+            <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                Total Returns
+              </p>
+              <h4 className="text-3xl font-black text-gray-900">
+                {analytics.returnsAndRTO?.returnCount || 0}
+              </h4>
+              <p className="text-[10px] font-bold text-indigo-500 mt-1 uppercase tracking-widest">
+                {analytics.returnsAndRTO?.returnRate}% Return Rate
+              </p>
+            </div>
+            <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                Return Revenue Impact
+              </p>
+              <h4 className="text-3xl font-black text-red-500">
+                ₹
+                {(
+                  overview.totalRevenue *
+                  (analytics.returnsAndRTO?.returnRate / 100)
+                ).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+              </h4>
+              <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
+                Est. Losses
+              </p>
+            </div>
+            <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                COD RTO Variance
+              </p>
+              <h4 className="text-3xl font-black text-gray-900">
+                {Math.round(
+                  (analytics.returnsAndRTO?.codCorrelation?.[0]?.rtoRate /
+                    (analytics.returnsAndRTO?.codCorrelation?.[1]?.rtoRate ||
+                      1)) *
+                    10,
+                ) / 10}
+                x
+              </h4>
+              <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
+                Vs Prepaid
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="h-full min-h-[400px]">
+              <RTOCityChart data={analytics.returnsAndRTO?.cityWiseRTO || []} />
+            </div>
+            <div className="h-full min-h-[400px]">
+              <CODReturnCorrelation
+                data={analytics.returnsAndRTO?.codCorrelation || []}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="h-full min-h-[400px]">
+              <ReturnReasonsChart
+                data={analytics.returnsAndRTO?.reasonDistribution || []}
+              />
+            </div>
+            <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm flex flex-col justify-center">
+              <h3 className="text-xl font-black text-gray-900 mb-6">
+                Proactive RTO Mitigation
+              </h3>
+              <div className="space-y-4">
+                {[
+                  {
+                    label: "Address Verification",
+                    desc: "Validate PIN code and house number via AI",
+                    impact: "High",
+                  },
+                  {
+                    label: "Refusal Prediction",
+                    desc: "Flag customers with high historical return rates",
+                    impact: "Medium",
+                  },
+                  {
+                    label: "Prepaid Incentives",
+                    desc: "Offer 5% instant discount on prepaid orders",
+                    impact: "High",
+                  },
+                  {
+                    label: "WhatsApp Confirmation",
+                    desc: "Send automated delivery confirmation on WhatsApp",
+                    impact: "Medium",
+                  },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold shrink-0">
+                      {i + 1}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest">
+                          {item.label}
+                        </h4>
+                        <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-blue-600 text-white uppercase tracking-tighter">
+                          Impact: {item.impact}
+                        </span>
+                      </div>
+                      <p className="text-[10px] font-bold text-gray-400 mt-1 leading-relaxed">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Placeholder for other tabs */}
       {![
         "Overview",
@@ -454,6 +608,7 @@ export default function DashboardPage() {
         "Pricing",
         "Customers",
         "Products",
+        "Returns",
         "Time Analysis",
       ].includes(activeTab) && (
         <div className="h-64 bg-white rounded-[32px] border-2 border-dashed border-gray-100 flex items-center justify-center animate-in fade-in duration-500">

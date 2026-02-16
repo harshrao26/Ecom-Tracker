@@ -4,6 +4,7 @@ import AnalyticsAggregator from "@/lib/analytics/aggregator";
 import AnalyticsEngine from "@/lib/analytics/engine";
 import AnalyticsCache from "@/lib/analytics/cache";
 import { calculateDateRange } from "@/lib/utils/analytics";
+import { getSession } from "@/lib/auth";
 
 /**
  * GET /api/analytics/overview
@@ -16,19 +17,19 @@ import { calculateDateRange } from "@/lib/utils/analytics";
  */
 export async function GET(request: NextRequest) {
   try {
-    // STEP 1: PARSE QUERY PARAMETERS
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-    const period = searchParams.get("period") || "7d";
-    const storeId = searchParams.get("storeId") || "all";
+    const session = await getSession();
 
-    // STEP 2: VALIDATE INPUT
-    if (!userId) {
+    if (!session) {
       return NextResponse.json(
-        { error: "User ID is required" },
-        { status: 400 },
+        { error: "Unauthorized: Login required" },
+        { status: 401 },
       );
     }
+
+    const userId = session.userId;
+    const { searchParams } = new URL(request.url);
+    const period = searchParams.get("period") || "7d";
+    const storeId = searchParams.get("storeId") || "all";
 
     // Validate period
     const validPeriods = [
@@ -134,6 +135,7 @@ export async function GET(request: NextRequest) {
       topCustomers: AnalyticsEngine.calculateTopCustomers(
         currentData.customers,
       ),
+      returnsAndRTO: AnalyticsEngine.analyzeReturnsAndRTO(currentData.orders),
 
       // Metadata
       period,
@@ -168,8 +170,13 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { userId, action } = body;
+    const { action } = body;
 
     if (action === "clear-cache") {
       // Clear all cache for this user

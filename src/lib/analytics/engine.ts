@@ -8,6 +8,7 @@ interface Order {
   date: Date;
   total: number;
   status: string;
+  returnReason?: string;
   paymentMethod: "prepaid" | "cod";
   customer: {
     id: string;
@@ -643,6 +644,117 @@ export class AnalyticsEngine {
       })
       .sort((a, b) => b.totalSpent - a.totalSpent)
       .slice(0, limit);
+  }
+
+  /**
+   * Comprehensive Returns and RTO Analysis
+   */
+  static analyzeReturnsAndRTO(orders: Order[]) {
+    const totalOrders = orders.length;
+    if (totalOrders === 0) {
+      return {
+        rtoRate: 0,
+        returnRate: 0,
+        codCorrelation: [],
+        cityWiseRTO: [],
+        reasonDistribution: [],
+      };
+    }
+
+    const rtoOrders = orders.filter((o) => o.status === "rto");
+    const returnedOrders = orders.filter((o) => o.status === "returned");
+
+    // COD vs Prepaid correlation
+    const codOrders = orders.filter((o) => o.paymentMethod === "cod");
+    const prepaidOrders = orders.filter((o) => o.paymentMethod === "prepaid");
+
+    const codRTORate =
+      codOrders.length > 0
+        ? (codOrders.filter((o) => o.status === "rto").length /
+            codOrders.length) *
+          100
+        : 0;
+    const prepaidRTORate =
+      prepaidOrders.length > 0
+        ? (prepaidOrders.filter((o) => o.status === "rto").length /
+            prepaidOrders.length) *
+          100
+        : 0;
+
+    const codReturnRate =
+      codOrders.length > 0
+        ? (codOrders.filter((o) => o.status === "returned").length /
+            codOrders.length) *
+          100
+        : 0;
+    const prepaidReturnRate =
+      prepaidOrders.length > 0
+        ? (prepaidOrders.filter((o) => o.status === "returned").length /
+            prepaidOrders.length) *
+          100
+        : 0;
+
+    // City-wise RTO
+    const cityRTO = new Map<string, { total: number; rto: number }>();
+    orders.forEach((o) => {
+      const city = o.customer.city;
+      if (!cityRTO.has(city)) {
+        cityRTO.set(city, { total: 0, rto: 0 });
+      }
+      const data = cityRTO.get(city)!;
+      data.total += 1;
+      if (o.status === "rto") data.rto += 1;
+    });
+
+    const cityWiseRTO = Array.from(cityRTO.entries())
+      .map(([city, data]) => ({
+        city,
+        rate: Math.round((data.rto / data.total) * 100),
+        total: data.total,
+      }))
+      .filter((c) => c.total > 2) // Filter out low volume cities for better stats
+      .sort((a, b) => b.rate - a.rate)
+      .slice(0, 10);
+
+    // Reason distribution
+    const reasons = new Map<string, number>();
+    orders.forEach((o) => {
+      if ((o.status === "returned" || o.status === "rto") && o.returnReason) {
+        reasons.set(o.returnReason, (reasons.get(o.returnReason) || 0) + 1);
+      }
+    });
+
+    const reasonDistribution = Array.from(reasons.entries())
+      .map(([reason, count]) => ({
+        reason,
+        count,
+        percentage: Math.round(
+          (count / (rtoOrders.length + returnedOrders.length)) * 100,
+        ),
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return {
+      rtoRate: Math.round((rtoOrders.length / totalOrders) * 10000) / 100,
+      returnRate:
+        Math.round((returnedOrders.length / totalOrders) * 10000) / 100,
+      rtoCount: rtoOrders.length,
+      returnCount: returnedOrders.length,
+      codCorrelation: [
+        {
+          type: "COD",
+          rtoRate: Math.round(codRTORate * 10) / 10,
+          returnRate: Math.round(codReturnRate * 10) / 10,
+        },
+        {
+          type: "Prepaid",
+          rtoRate: Math.round(prepaidRTORate * 10) / 10,
+          returnRate: Math.round(prepaidReturnRate * 10) / 10,
+        },
+      ],
+      cityWiseRTO,
+      reasonDistribution,
+    };
   }
 }
 
