@@ -90,87 +90,152 @@ const Navbar = () => {
   );
 };
 
-const SourceCard = ({ icon, label }: { icon: React.ReactNode; label: string }) => (
-  <div className="bg-white px-6 py-4 rounded-[22px] border border-gray-100/50 shadow-[0_10px_30px_rgba(0,0,0,0.03)] flex items-center gap-4 min-w-[180px] hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-500 cursor-default">
-    <div className="text-2xl opacity-80 group-hover:opacity-100 transition-opacity">{icon}</div>
-    <span className="text-[11px] font-black text-gray-500 uppercase tracking-[0.15em]">{label}</span>
+const SourceCard = ({
+  icon,
+  label,
+}: {
+  icon: React.ReactNode;
+  label: string;
+}) => (
+  <div className="bg-white p-3 md:p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 min-w-[140px] hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+    <div className="text-2xl">{icon}</div>
+    <span className="text-xs font-black text-gray-700 uppercase tracking-wider">
+      {label}
+    </span>
   </div>
 );
 
 const IntegrationFlow = () => {
   return (
-    <div className="relative w-full max-w-7xl mx-auto mt-24 px-4 py-32">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-16 relative lg:px-20">
-        
+    <div className="relative w-full max-w-6xl mx-auto mt-24 px-4 py-20">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-12 relative lg:px-10">
         {/* Left Side: Integration Sources */}
-        <div className="flex flex-col gap-5 z-10 w-full md:w-auto relative">
-          <div className="grid grid-cols-1 gap-4">
-            <SourceCard icon={<SiShopify className="text-[#96bf48]" />} label="Shopify" />
-            <SourceCard icon={<SiWoocommerce className="text-[#96588a]" />} label="Woo" />
-            <SourceCard icon={<SiAmazon className="text-[#FF9900]" />} label="Amazon" />
-            <SourceCard icon={<SiFlipkart className="text-[#2874F0]" />} label="Flipkart" />
-            <SourceCard icon={<FiTrendingUp className="text-indigo-600" />} label="Meta Ads" />
-            <SourceCard icon={<FiGlobe className="text-blue-500" />} label="Marketing" />
+        <div className="flex flex-col gap-4 z-10 w-full md:w-auto relative">
+          <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
+            <SourceCard
+              icon={<SiShopify className="text-[#96bf48]" />}
+              label="Shopify"
+            />
+            <SourceCard
+              icon={<SiWoocommerce className="text-[#96588a]" />}
+              label="Woo"
+            />
+            <SourceCard
+              icon={<SiAmazon className="text-[#FF9900]" />}
+              label="Amazon"
+            />
+            <SourceCard
+              icon={<SiFlipkart className="text-[#2874F0]" />}
+              label="Flipkart"
+            />
+            <SourceCard
+              icon={<FiTrendingUp className="text-indigo-600" />}
+              label="Meta Ads"
+            />
+            <SourceCard
+              icon={<FiGlobe className="text-blue-500" />}
+              label="Marketing"
+            />
           </div>
         </div>
 
         {/* Center: Online Planet Hub */}
-        <div className="relative z-20 my-16 md:my-0">
-          <div className="w-28 h-28 md:w-36 md:h-36 rounded-[40px] bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white shadow-[0_20px_60px_rgba(79,70,229,0.3)] relative group cursor-pointer overflow-hidden leading-none">
-            <FiShield size={56} className="relative z-10 drop-shadow-lg" />
-            {/* Animated Ring */}
-            <div className="absolute inset-0 rounded-[40px] border-[3px] border-white/20 animate-[ping_3s_linear_infinite] opacity-30"></div>
-            {/* Inner Glow */}
-            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        <div className="relative z-20 my-10 md:my-0">
+          <div className="w-24 h-24 md:w-32 md:h-32 rounded-[32px] bg-indigo-600 flex items-center justify-center text-white shadow-[0_0_50px_rgba(79,70,229,0.4)] animate-pulse relative">
+            <FiShield size={48} className="relative z-10" />
+            <div className="absolute inset-0 rounded-[32px] border-2 border-white/20 animate-ping opacity-20"></div>
           </div>
-          {/* Outer Ambient Glow */}
-          <div className="absolute -inset-20 bg-indigo-500/10 blur-[100px] rounded-full -z-10 animate-pulse"></div>
+          <div className="absolute -inset-10 bg-indigo-500/10 blur-[60px] rounded-full -z-10"></div>
         </div>
 
         {/* Right Side: Output / Growth */}
         <div className="relative z-10 w-full md:w-auto">
-          <div className="bg-white p-10 md:p-12 rounded-[52px] border border-gray-100 shadow-[0_30px_100px_rgba(0,0,0,0.05)] space-y-10 max-w-sm mx-auto relative overflow-visible">
-            <div className="text-center">
-              <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] block mb-2">Impact</span>
-              <span className="text-2xl font-black text-gray-900 tracking-tight block">Business Growth</span>
-              <div className="inline-flex mt-3 items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-wider">
-                <FiTrendingUp size={10} /> 150%
+          <div className="bg-white p-6 md:p-8 rounded-[40px] border border-white/50 bg-white/80 backdrop-blur-xl shadow-2xl space-y-6 max-w-sm mx-auto">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-1">
+                  Impact
+                </span>
+                <span className="text-lg font-black text-gray-900 tracking-tight">
+                  Business Growth
+                </span>
+              </div>
+              <div className="px-3 py-1.5 rounded-xl bg-green-50 text-green-600 text-xs font-black tracking-tight flex items-center gap-1">
+                <FiTrendingUp /> 150%
               </div>
             </div>
-            
+
             {/* Miniature Bars */}
-            <div className="flex items-end justify-between h-40 gap-4 px-2">
+            <div className="flex items-end justify-between h-32 gap-3 px-2">
               {[35, 60, 45, 95, 65, 85].map((h, i) => (
-                <div key={i} className={`w-full rounded-2xl transition-all duration-1000 ${i % 2 === 0 ? "bg-indigo-50" : "bg-indigo-600 shadow-[0_10px_30px_rgba(79,70,229,0.2)]"}`} style={{ height: `${h}%` }}></div>
+                <div
+                  key={i}
+                  className={`w-full rounded-t-xl transition-all duration-1000 ${i % 2 === 0 ? "bg-indigo-100" : "bg-indigo-600 shadow-lg shadow-indigo-600/20"}`}
+                  style={{ height: `${h}%` }}
+                ></div>
               ))}
             </div>
-            
-            <div className="pt-8 flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-[0.1em]">
-               <span className="opacity-60">June 02</span>
-               <span className="opacity-60">June 23</span>
-            </div>
 
-            {/* Floating Performance Tag */}
-            <div className="absolute -top-12 -right-8 md:-right-12 bg-gray-950 text-white p-7 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex flex-col items-start min-w-[160px] animate-bounce-slow">
-               <span className="text-[9px] font-black opacity-40 uppercase tracking-[0.2em] mb-2">Increase Rate</span>
-               <div className="flex items-center gap-3">
-                 <span className="text-3xl font-black">150%</span>
-                 <span className="text-2xl text-white/40">↗</span>
-               </div>
+            <div className="pt-6 border-t border-gray-50 flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              <span>June 02</span>
+              <span>June 23</span>
             </div>
+          </div>
+
+          {/* Floating Performance Tag */}
+          <div className="absolute -top-10 -right-4 bg-gray-950 text-white p-5 rounded-[24px] shadow-2xl border border-gray-800 flex flex-col items-center animate-bounce-slow">
+            <span className="text-[10px] font-black opacity-50 uppercase tracking-[0.2em] mb-1">
+              Increase Rate
+            </span>
+            <span className="text-2xl font-black">150% ↗</span>
           </div>
         </div>
 
-        {/* Connecting Lines (SVG) */}
-        <svg className="absolute inset-0 w-full h-full -z-10 hidden md:block opacity-60" viewBox="0 0 1200 600" preserveAspectRatio="none">
-          {/* Paths with more elegant curvature */}
-          <path d="M280 150 Q 500 150, 600 300" stroke="url(#gradient-in)" strokeWidth="1.5" strokeDasharray="8 12" className="animate-flow" fill="none" />
-          <path d="M280 450 Q 500 450, 600 300" stroke="url(#gradient-in)" strokeWidth="1.5" strokeDasharray="8 12" className="animate-flow" fill="none" />
-          <path d="M280 300 L 600 300" stroke="url(#gradient-in)" strokeWidth="1.5" strokeDasharray="8 12" className="animate-flow" fill="none" />
-          
-          {/* Outgoing Flow (Output) */}
-          <path d="M600 300 C 750 300, 800 300, 920 300" stroke="url(#gradient-out)" strokeWidth="3" strokeDasharray="10 15" className="animate-flow-output" fill="none" />
-          
+        {/* Connecting Lines (SVG) - Hidden on mobile for performance and clarity */}
+        <svg
+          className="absolute inset-0 w-full h-full -z-10 hidden md:block"
+          viewBox="0 0 1000 500"
+          preserveAspectRatio="none"
+        >
+          {/* Incoming Flows from Left */}
+          {/* Top curve */}
+          <path
+            d="M220 150 C 400 150, 450 250, 500 250"
+            stroke="url(#gradient-in)"
+            strokeWidth="2"
+            strokeDasharray="6 6"
+            className="animate-flow"
+            fill="none"
+          />
+          {/* Bottom curve */}
+          <path
+            d="M220 350 C 400 350, 450 250, 500 250"
+            stroke="url(#gradient-in)"
+            strokeWidth="2"
+            strokeDasharray="6 6"
+            className="animate-flow"
+            fill="none"
+          />
+          {/* Middle straightish */}
+          <path
+            d="M220 250 L 500 250"
+            stroke="url(#gradient-in)"
+            strokeWidth="2"
+            strokeDasharray="6 6"
+            className="animate-flow"
+            fill="none"
+          />
+
+          {/* Outgoing Flow to Right */}
+          <path
+            d="M500 250 L 780 250"
+            stroke="url(#gradient-out)"
+            strokeWidth="4"
+            strokeDasharray="8 8"
+            className="animate-flow-output"
+            fill="none"
+          />
+
           <defs>
             <linearGradient id="gradient-in" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#e2e8f0" />
@@ -354,162 +419,280 @@ export default function Homepage() {
         </div>
       </section>
 
-      {/* --- Features Grid --- */}
-      <section id="features" className="py-32 px-6">
+      {/* --- Bento Hub: Unified Command Center --- */}
+      <section id="bento-hub" className="py-32 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter mb-4">
-              Smart solution for <br />
-              <span className="text-indigo-600">seamless operations.</span>
+              Your entire empire. <br />
+              <span className="text-indigo-600">One unified command center.</span>
             </h2>
-            <p className="text-gray-500 font-bold max-w-xl mx-auto">
-              Everything you need to handle high-volume e-commerce without the
-              administrative headache.
-            </p>
+            <p className="text-gray-500 font-bold max-w-xl mx-auto">Stop jumping between admin panels. Online Planet merges data from every source into a single source of truth.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard
-              icon={FiZap}
-              color="bg-indigo-600"
-              title="Real-time Sync"
-              description="Inventory, orders, and customer data synced across Shopify and WooCommerce every 60 seconds."
-            />
-            <FeatureCard
-              icon={FiTrendingUp}
-              color="bg-purple-600"
-              title="Profit Analysis"
-              description="Calculate true net profit after deductions for shipping, payment gateways, and GST automatically."
-            />
-            <FeatureCard
-              icon={FiGlobe}
-              color="bg-blue-600"
-              title="Regional Insights"
-              description="Deep dive into state-wise performance in India to optimize your regional ads and logistics."
-            />
-            <FeatureCard
-              icon={FiShield}
-              color="bg-green-600"
-              title="Secure Storage"
-              description="Enterprise-grade encryption for all API keys. Your store data is protected and private."
-            />
-            <FeatureCard
-              icon={FiLayers}
-              color="bg-yellow-600"
-              title="Multi-Store Hub"
-              description="Switch between different brands or franchises instantly from one central command center."
-            />
-            <FeatureCard
-              icon={FiBarChart2}
-              color="bg-rose-600"
-              title="Advanced Reports"
-              description="Visual reports for order cohort analysis, customer retention, and life-time value (LTV)."
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-auto md:h-[600px]">
+            {/* Big Card: Multi-Store */}
+            <div className="md:col-span-2 bg-white rounded-[40px] border border-gray-100 p-10 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group">
+              <div className="relative z-10 max-w-md">
+                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-4 block">Unified Data</span>
+                <h3 className="text-3xl font-black text-gray-900 mb-4 leading-tight">Compare Shopify vs Amazon ROAS in real-time.</h3>
+                <p className="text-gray-500 font-medium mb-8 leading-relaxed text-sm">Our deep integration doesn't just pull orders—it correlates your ad spend with actual revenue across every platform.</p>
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-[#96bf48] border border-gray-100"><SiShopify size={24} /></div>
+                  <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-[#FF9900] border border-gray-100"><SiAmazon size={24} /></div>
+                  <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-[#2874F0] border border-gray-100"><SiFlipkart size={24} /></div>
+                </div>
+              </div>
+              {/* Abstract UI Backdrop */}
+              <div className="absolute top-10 right-[-40px] w-80 h-full bg-indigo-50/50 rounded-t-[40px] border-l border-t border-indigo-100 hidden md:block p-8 translate-y-20 group-hover:translate-y-10 transition-transform duration-700">
+                <div className="space-y-4">
+                  <div className="h-4 w-3/4 bg-indigo-200/50 rounded-full"></div>
+                  <div className="h-4 w-1/2 bg-indigo-100/50 rounded-full"></div>
+                  <div className="h-24 w-full bg-white rounded-2xl border border-indigo-100 shadow-sm flex items-end p-2 gap-1">
+                    {[40, 70, 45, 90, 60].map((h, i) => <div key={i} className="flex-1 bg-indigo-500/20 rounded-t-sm" style={{ height: `${h}%` }}></div>)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Small Card: Real-time */}
+            <div className="bg-gray-900 rounded-[40px] p-10 text-white flex flex-col justify-between hover:shadow-2xl transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white mb-6"><FiZap size={24} /></div>
+              <div>
+                <h3 className="text-2xl font-black mb-4">60-Second Data Sync.</h3>
+                <p className="text-gray-400 text-xs font-bold leading-relaxed">Your inventory and orders are refreshed every minute. No more overselling on Flipkart when you're out of stock on Shopify.</p>
+              </div>
+            </div>
+
+            {/* Middle Card: Security */}
+            <div className="bg-indigo-600 rounded-[40px] p-10 text-white flex flex-col justify-between hover:shadow-2xl transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white mb-6"><FiShield size={24} /></div>
+              <div>
+                <h3 className="text-2xl font-black mb-4">Bank-Grade Privacy.</h3>
+                <p className="text-indigo-100 text-xs font-bold leading-relaxed">Enterprise-grade AES-256 encryption protects your API keys. Your data is your property, always.</p>
+              </div>
+            </div>
+
+            {/* Middle Big Card: Global Terminal */}
+            <div className="md:col-span-2 bg-white rounded-[40px] border border-gray-100 p-10 shadow-sm hover:shadow-xl transition-all relative overflow-hidden group">
+               <div className="relative z-10 max-w-sm">
+                 <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-4 block">Smart Search</span>
+                 <h3 className="text-3xl font-black text-gray-900 mb-4 leading-tight">Global Terminal Seek.</h3>
+                 <p className="text-gray-500 font-medium leading-relaxed text-sm">Find any order, SKU, or customer across all stores in 0.2 seconds. Just type and fly.</p>
+               </div>
+               <div className="mt-8 flex items-center gap-3 bg-gray-50 border border-gray-100 p-4 rounded-2xl text-gray-400 text-xs font-bold max-w-xs transition-all group-hover:border-indigo-200">
+                  <FiArrowRight /> Search "ORD-54..."
+               </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* --- Dynamic Content Section --- */}
-      <section
-        id="solutions"
-        className="py-24 bg-gray-950 text-white overflow-hidden relative"
-      >
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-          <div>
-            <div className="inline-block px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-6">
-              India Focused Analytics
-            </div>
-            <h2 className="text-4xl md:text-5xl font-black mb-8 leading-[1.1] tracking-tight">
-              Personalized user experience <br />
-              <span className="text-gray-500 italic">& recommendations.</span>
-            </h2>
-
-            <div className="space-y-8">
-              <div className="flex gap-6">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 flex items-center justify-center text-indigo-500 shrink-0">
-                  <FiZap size={24} />
-                </div>
-                <div>
-                  <h4 className="text-lg font-bold mb-2">
-                    Custom Workflow Insights
-                  </h4>
-                  <p className="text-gray-400 text-sm font-medium leading-relaxed">
-                    Our AI analyzes your return reasons and helps you identify
-                    which products need better quality checks.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-6">
-                <div className="w-12 h-12 rounded-2xl bg-purple-600/20 flex items-center justify-center text-purple-500 shrink-0">
-                  <FiLayers size={24} />
-                </div>
-                <div>
-                  <h4 className="text-lg font-bold mb-2">
-                    Omnichannel Management
-                  </h4>
-                  <p className="text-gray-400 text-sm font-medium leading-relaxed">
-                    Stop jumping between tabs. Compare Amazon and Shopify
-                    performance side-by-side in real-time.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-[40px] border border-gray-800 shadow-3xl">
-              <div className="space-y-6">
-                <div className="flex items-center gap-4 bg-gray-800/50 p-4 rounded-2xl border border-gray-700">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                    <SiShopify />
+      {/* --- AI Intelligence Suite --- */}
+      <section id="ai-suite" className="py-32 bg-gray-50 px-6 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div className="order-2 lg:order-1 relative">
+               {/* Forecasting Visual */}
+               <div className="bg-white p-10 rounded-[48px] shadow-2xl border border-gray-100 relative group">
+                  <div className="flex items-center justify-between mb-10">
+                    <h4 className="text-lg font-black tracking-tight">AI Sales Forecast</h4>
+                    <div className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-lg">30-DAY PREDICTION</div>
                   </div>
-                  <div className="flex-1">
-                    <div className="text-xs text-gray-400 mb-1">
-                      New Order - Fashion Paradise
-                    </div>
-                    <div className="text-sm font-bold">
-                      ₹2,499 from Bangalore
-                    </div>
-                  </div>
-                  <div className="text-[10px] text-green-400 font-bold">
-                    +0.5% Profit
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 bg-gray-800/50 p-4 rounded-2xl border border-gray-700">
-                  <div className="w-10 h-10 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center">
-                    <SiWoocommerce />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-xs text-gray-400 mb-1">
-                      Stock Alert - TechHub
-                    </div>
-                    <div className="text-sm font-bold">
-                      Wireless Buds SKU running low
-                    </div>
-                  </div>
-                  <div className="text-[10px] text-red-400 font-bold">
-                    Priority
-                  </div>
-                </div>
-                <div className="h-32 bg-indigo-600/10 rounded-2xl border border-indigo-500/20 p-4 flex flex-col justify-end">
-                  <div className="flex gap-1 items-end">
-                    {[30, 60, 45, 80, 50, 95, 70].map((h, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 bg-indigo-500 rounded-t-sm"
-                        style={{ height: `${h}%` }}
-                      ></div>
+                  
+                  <div className="h-64 flex items-end gap-2 relative">
+                    {/* Actual data */}
+                    {[40, 35, 50, 45, 60, 55, 70, 65, 80, 75, 90, 85].map((h, i) => (
+                      <div key={i} className="flex-1 bg-gray-200 transition-all hover:bg-gray-300" style={{ height: `${h}%` }}></div>
                     ))}
+                    {/* Forecasted data (Glow) */}
+                    {[95, 100, 110, 105, 120].map((h, i) => (
+                      <div key={i} className="flex-1 bg-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.4)] animate-pulse" style={{ height: `${h}%` }}></div>
+                    ))}
+                    
+                    {/* Tooltip */}
+                    <div className="absolute top-0 right-0 bg-gray-950 text-white p-4 rounded-2xl shadow-2xl border border-gray-800 -translate-y-4 group-hover:-translate-y-8 transition-transform">
+                       <span className="text-[10px] font-black opacity-50 block mb-1">PROVIEW FORECAST</span>
+                       <span className="text-xl font-black">₹4.2L <span className="text-xs text-green-400">+24%</span></span>
+                    </div>
                   </div>
-                  <div className="mt-2 text-[10px] font-black uppercase text-indigo-400 tracking-widest">
-                    Revenue Momentum: +24% Today
+               </div>
+               
+               {/* Floating Churn Bubble */}
+               <div className="absolute -bottom-10 -left-10 bg-white p-6 rounded-3xl shadow-2xl border border-gray-100 max-w-[200px] animate-bounce-slow">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-black text-xs">!</div>
+                    <span className="text-[10px] font-black tracking-tighter">CHURN RISK ALERT</span>
                   </div>
+                  <p className="text-[10px] font-bold text-gray-500">12 High-value customers haven't ordered in 30 days.</p>
+               </div>
+            </div>
+
+            <div className="order-1 lg:order-2">
+              <div className="inline-block px-4 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-purple-600 text-[10px] font-black uppercase tracking-widest mb-6">Built with Gemini 2.0</div>
+              <h2 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tighter mb-8 leading-[1.1]">
+                Stop guessing. <br />
+                <span className="text-indigo-600">Start predicting.</span>
+              </h2>
+              <p className="text-lg text-gray-500 font-medium mb-10 leading-relaxed">
+                Online Planet's AI engine goes beyond reports. We predict your stockouts 14 days in advance and identify which marketing channels are burning cash.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <h4 className="font-black text-gray-900 mb-2">Demand Forecasting</h4>
+                  <p className="text-sm font-medium text-gray-400">Inventory predictions based on seasonal trends and ad-spend correlation.</p>
+                </div>
+                <div>
+                  <h4 className="font-black text-gray-900 mb-2">Profit Optimization</h4>
+                  <p className="text-sm font-medium text-gray-400">AI-suggested pricing to maximize net-profit, not just gross revenue.</p>
                 </div>
               </div>
             </div>
-            {/* Decorative Background Blur */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-600 blur-[100px] opacity-20 -z-10"></div>
           </div>
+        </div>
+        
+        {/* Background glow */}
+        <div className="absolute top-1/2 left-0 w-96 h-96 bg-indigo-200/30 blur-[120px] -z-10 rounded-full"></div>
+      </section>
+
+      {/* --- India-First Section --- */}
+      <section className="py-32 px-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row items-center gap-20">
+            <div className="flex-1">
+              <span className="text-[10px] font-black text-orange-600 uppercase tracking-[0.3em] mb-4 block">Made for Indian Sellers</span>
+              <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter mb-8 leading-[1.1]">
+                Localized for the <br />
+                <span className="text-orange-500 italic">Bharat E-commerce.</span>
+              </h2>
+              
+              <div className="space-y-6">
+                 {[
+                   { title: "GST-Ready Analytics", desc: "Automated CGST/SGST/IGST breakdown for faster tax filing.", icon: <FiCheckCircle className="text-green-500" /> },
+                   { title: "Hinglish Support", desc: "Toggle between English, Hindi, and Hinglish with one tap.", icon: <FiCheckCircle className="text-orange-500" /> },
+                   { title: "Tier 2/3 Intelligence", desc: "Track shipping feasibility and COD returns in emerging cities.", icon: <FiCheckCircle className="text-blue-500" /> },
+                   { title: "WhatsApp Alert Hub", desc: "Get real-time profit and stock alerts directly on WhatsApp.", icon: <FiCheckCircle className="text-green-400" /> }
+                 ].map((item, i) => (
+                   <div key={i} className="flex gap-4 group p-4 rounded-2xl hover:bg-white hover:shadow-sm transition-all border border-transparent hover:border-gray-100">
+                     <span className="mt-1">{item.icon}</span>
+                     <div>
+                       <h4 className="font-black text-gray-900">{item.title}</h4>
+                       <p className="text-sm font-bold text-gray-400">{item.desc}</p>
+                     </div>
+                   </div>
+                 ))}
+              </div>
+            </div>
+
+            <div className="flex-1 relative">
+               <div className="bg-white border border-gray-100 rounded-[48px] p-8 shadow-2xl relative z-10">
+                  <div className="flex items-center justify-between mb-8">
+                    <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Regional Reports</span>
+                    <FiGlobe className="text-indigo-600" />
+                  </div>
+                  
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">🇮🇳</span>
+                        <span className="text-sm font-bold text-gray-900">Maharashtra</span>
+                      </div>
+                      <span className="text-sm font-black text-indigo-600">₹45,200</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">🇮🇳</span>
+                        <span className="text-sm font-bold text-gray-900">Delhi NCR</span>
+                      </div>
+                      <span className="text-sm font-black text-indigo-600">₹38,500</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl opacity-50">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">🇮🇳</span>
+                        <span className="text-sm font-bold text-gray-900">Tamil Nadu</span>
+                      </div>
+                      <span className="text-sm font-black text-indigo-600">₹12,400</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-8 pt-8 border-t border-gray-50 flex items-center gap-4">
+                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500 w-[65%]"></div>
+                    </div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Metro Cities (65%)</span>
+                  </div>
+               </div>
+               
+               {/* Language Toggle Mockup */}
+               <div className="absolute top-20 -right-10 bg-indigo-600 text-white p-4 rounded-2xl shadow-2xl z-20 flex gap-4 animate-bounce-slow">
+                  <span className="text-xs font-black">EN</span>
+                  <div className="w-10 h-6 bg-white/20 rounded-full flex items-center px-1"><div className="w-4 h-4 bg-white rounded-full ml-auto"></div></div>
+                  <span className="text-xs font-black opacity-50">हिं</span>
+               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- Excel vs Online Planet --- */}
+      <section className="py-32 bg-gray-950 text-white px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-black mb-4 tracking-tighter">
+              Stop fighting with <span className="text-red-500 italic">Excel.</span>
+            </h2>
+            <p className="text-gray-400 font-bold">Manual tracking is slow, error-prone, and kills profitability.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 relative">
+            {/* The Pain */}
+            <div className="p-10 border border-gray-800 rounded-[40px] bg-gray-900/50">
+               <h3 className="text-xl font-black mb-8 text-red-400 uppercase tracking-widest">The Old Way</h3>
+               <ul className="space-y-6">
+                 {["Manual data export every morning", "Broken formulas & spreadsheet lag", "Zero real-time inventory visibility", "Hidden costs (ad spend) not tracked", "Requires 10+ hours a week"].map((item, i) => (
+                   <li key={i} className="flex gap-4 text-sm font-medium text-gray-500">
+                     <span className="text-red-500">✕</span> {item}
+                   </li>
+                 ))}
+               </ul>
+            </div>
+
+            {/* The Solution */}
+            <div className="p-10 border-2 border-indigo-500 rounded-[40px] bg-indigo-600 shadow-[0_0_50px_rgba(79,70,229,0.2)]">
+               <h3 className="text-xl font-black mb-8 text-white uppercase tracking-widest">The Online Planet Way</h3>
+               <ul className="space-y-6">
+                 {["100% Automated real-time sync", "Beautiful, error-free visualizations", "Live stock alerts across all channels", "Integrated ROAS & Net Profit metrics", "Saves 10+ hours a week"].map((item, i) => (
+                   <li key={i} className="flex gap-4 text-sm font-black text-white">
+                     <span className="text-indigo-200">✓</span> {item}
+                   </li>
+                 ))}
+               </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- How it Works: Timeline --- */}
+      <section className="py-32 px-6">
+        <div className="max-w-7xl mx-auto text-center">
+            <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter mb-20">Connect and scale in 3 steps.</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+               <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-50 hidden md:block -z-10 -translate-y-1/2"></div>
+               
+               {[
+                 { step: "01", title: "Connect Platforms", desc: "Authorize Shopify, Amazon, or Flipkart in 2 clicks with industry-grade security." },
+                 { step: "02", title: "Automated Sync", desc: "We pull your past 90 days of data and set up real-time webhooks for live tracking." },
+                 { step: "03", title: "Get Insights", desc: "Launch your dashboard and get clear, AI-driven profitable growth strategies." }
+               ].map((item, i) => (
+                 <div key={i} className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm relative group hover:shadow-xl transition-all">
+                    <div className="w-12 h-12 rounded-full bg-gray-900 text-white flex items-center justify-center font-black text-sm absolute -top-6 left-1/2 -translate-x-1/2 group-hover:scale-110 transition-transform">{item.step}</div>
+                    <h4 className="text-xl font-black text-gray-900 mt-4 mb-3">{item.title}</h4>
+                    <p className="text-sm font-medium text-gray-500 leading-relaxed">{item.desc}</p>
+                 </div>
+               ))}
+            </div>
         </div>
       </section>
 
@@ -592,44 +775,51 @@ export default function Homepage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <PricingCard
               title="Starter"
-              price="49"
+              price="999"
               description="Basic analytics for emerging D2C brands."
               features={[
-                "Single Platform Sync (Shopify)",
-                "Store Dashboard",
+                "2 Platform Sync (Shopify/Woo)",
+                "1,000 Orders per month",
+                "30-Day Data Retention",
                 "Basic Sales Reports",
                 "Email Support",
-                "1 Monthly AI Insight",
               ]}
               cta="Get Started"
             />
             <PricingCard
               title="Growth"
-              price="199"
+              price="2,499"
               highlighted={true}
-              description="Full performance suite for growing enterprises."
+              description="Full performance suite for high-volume sellers."
               features={[
-                "Unlimited Platforms (Shopify/Woo)",
-                "Advanced AI Predictive Engine",
-                "Net Profit & GST Analysis",
-                "Customer Cohort Tracking",
-                "Priority Support (24/7)",
+                "Unlimited Shopify/Woo Stores",
+                "10,000 Orders per month",
+                "90-Day Data History",
+                "Full AI Predictive Engine",
+                "WhatsApp Profit Alerts",
+                "GST-Ready Reporting",
               ]}
               cta="Try Growth Free"
             />
             <PricingCard
               title="Enterprise"
-              price="499"
+              price="9,999"
               description="Complete infrastructure for agencies & hubs."
               features={[
-                "White-label Reports",
                 "Amazon & Flipkart Integration",
-                "Custom API Access",
+                "Unlimited Orders & Data",
+                "Custom AI Strategy Hub",
+                "API & Webhook Access",
                 "Dedicated Account Manager",
-                "Custom Slack Alerts",
+                "White-label Reports",
               ]}
               cta="Contact Sales"
             />
+          </div>
+          <div className="text-center mt-12">
+            <p className="text-gray-400 text-sm font-bold">
+              Looking for a custom plan? <Link href="/login" className="text-indigo-600 underline">Start with our Free Forever tier</Link> for up to 100 orders/mo.
+            </p>
           </div>
         </div>
       </section>

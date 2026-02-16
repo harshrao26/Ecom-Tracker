@@ -49,16 +49,9 @@ export default function Sidebar() {
       {/* Logo Section */}
       <div className="p-6 flex items-center gap-3">
         <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-900/50">
-          OP
+           
         </div>
-        <div>
-          <h1 className="text-white font-bold text-sm tracking-widest leading-none">
-            ONLINE PLANET
-          </h1>
-          <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter">
-            Admin Terminal
-          </p>
-        </div>
+         
       </div>
 
       {/* Navigation Items */}
@@ -94,19 +87,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Footer / System Status */}
-      <div className="p-4 border-t border-gray-800">
-        <div className="bg-red-900/20 border border-red-900/30 rounded-lg p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">
-              System Core v4.2
-            </span>
-          </div>
-          <span className="text-[10px] text-red-400 font-bold">1 ISSUE</span>
-        </div>
-      </div>
-
+      
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
