@@ -10,6 +10,7 @@ interface MetricCardProps {
   trend?: "up" | "down" | "neutral";
   subtitle?: string;
   description?: string;
+  comparisonLabel?: string;
 }
 
 export default function MetricCard({
@@ -20,6 +21,7 @@ export default function MetricCard({
   trend,
   subtitle,
   description,
+  comparisonLabel,
 }: MetricCardProps) {
   return (
     <div className="group bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 relative overflow-hidden">
@@ -44,14 +46,21 @@ export default function MetricCard({
           </div>
 
           {change !== undefined && (
-            <div
-              className={`flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                trend === "up"
-                  ? "bg-green-50 text-green-600"
-                  : "bg-red-50 text-red-600"
-              }`}
-            >
-              {trend === "up" ? "↗" : "↘"} {Math.abs(change)}%
+            <div className="flex flex-col items-end">
+              <div
+                className={`flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  trend === "up"
+                    ? "bg-green-50 text-green-600"
+                    : "bg-red-50 text-red-600"
+                }`}
+              >
+                {trend === "up" ? "↗" : "↘"} {Math.abs(change)}%
+              </div>
+              {comparisonLabel && (
+                <span className="text-[8px] font-bold text-gray-400 mt-1 uppercase tracking-tight">
+                  {comparisonLabel}
+                </span>
+              )}
             </div>
           )}
         </div>

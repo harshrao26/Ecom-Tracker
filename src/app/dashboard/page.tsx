@@ -7,11 +7,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import TopBar from "@/components/layout/TopBar";
 import MetricCard from "@/components/dashboard/MetricCard";
 import RevenueTrend from "@/components/dashboard/RevenueTrend";
 import OrderStatusPie from "@/components/dashboard/OrderStatusPie";
 import TopSellingProductsChart from "@/components/dashboard/TopSellingProductsChart";
 import CategoryDistributionChart from "@/components/dashboard/CategoryDistributionChart";
+import ReportGenerator from "@/components/dashboard/ReportGenerator";
 import RevenueByStateChart from "@/components/dashboard/RevenueByStateChart";
 import OrdersByRegionTreemap from "@/components/dashboard/OrdersByRegionTreemap";
 import RegionalPerformanceTable from "@/components/dashboard/RegionalPerformanceTable";
@@ -46,10 +48,12 @@ import {
   FiCpu,
   FiRotateCcw,
   FiLogOut,
+  FiBox,
 } from "react-icons/fi";
 import Link from "next/link";
 
 export default function DashboardPage() {
+  const [user, setUser] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +61,23 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("Overview");
 
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        const data = await res.json();
+        if (data.user) {
+          setUser(data.user);
+          // Set default period based on plan if Today isn't suitable,
+          // but Today is safe for all.
+        }
+      } catch (err) {
+        console.error("Dashboard User Fetch Error:", err);
+      }
+    };
+    fetchUserData();
+  }, []);
 
   useEffect(() => {
     fetchAnalytics();
@@ -109,7 +130,7 @@ export default function DashboardPage() {
     }
   }
 
-  if (loading) {
+  if (loading && !user) {
     return (
       <div className="h-[80vh] flex items-center justify-center">
         <div className="text-center">
@@ -124,6 +145,30 @@ export default function DashboardPage() {
 
   const overview = analytics?.overview || {};
 
+  // Get comparison label based on selected period
+  const getComparisonLabel = () => {
+    switch (period) {
+      case "Today":
+        return "vs yesterday";
+      case "Yesterday":
+        return "vs day before";
+      case "Last Week":
+        return "vs prev week";
+      case "Last 30 Days":
+        return "vs last month";
+      case "Month to Date":
+        return "vs last month";
+      case "Year to Date":
+        return "vs last year";
+      case "Last Year":
+        return "vs year before";
+      default:
+        return "vs prev period";
+    }
+  };
+
+  const comparisonLabel = getComparisonLabel();
+
   const tabs = [
     { id: "Overview", icon: FiGrid },
     { id: "Regional", icon: FiMapPin },
@@ -133,6 +178,34 @@ export default function DashboardPage() {
     { id: "Returns", icon: FiRotateCcw },
     { id: "Time Analysis", icon: FiClock },
   ];
+
+  // Logic to determine available periods based on plan
+  const getAllowedPeriods = () => {
+    const months = user?.limits?.historicalDataMonths ?? 0;
+    const all = [
+      "Today",
+      "Yesterday",
+      "Last Week",
+      "Last 30 Days",
+      "Month to Date",
+      "Year to Date",
+      "Last Year",
+    ];
+
+    if (months === -1 || months >= 12) return all;
+    if (months >= 3)
+      return [
+        "Today",
+        "Yesterday",
+        "Last Week",
+        "Last 30 Days",
+        "Month to Date",
+      ];
+    if (months >= 1) return ["Today", "Yesterday", "Last Week", "Last 30 Days"];
+    return ["Today", "Yesterday"];
+  };
+
+  const allowedPeriods = getAllowedPeriods();
 
   return (
     <div className="px-8 space-y-8 animate-in fade-in duration-700">
@@ -161,31 +234,38 @@ export default function DashboardPage() {
               onChange={(e) => setPeriod(e.target.value)}
               className="bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl focus:outline-none focus:ring-2 ring-white/30 cursor-pointer hover:bg-white/20 transition-all"
             >
-              <option className="bg-blue-600">Today</option>
-              <option className="bg-blue-600">Yesterday</option>
-              <option className="bg-blue-600">Last Week</option>
-              <option className="bg-blue-600">Last 30 Days</option>
-              <option className="bg-blue-600">Month to Date</option>
-              <option className="bg-blue-600">Year to Date</option>
-              <option className="bg-blue-600">Last Year</option>
+              {allowedPeriods.map((p) => (
+                <option key={p} className="bg-blue-600">
+                  {p}
+                </option>
+              ))}
             </select>
+            <div className="flex flex-wrap items-center gap-4 relative z-20 hide-in-pdf">
+              <ReportGenerator
+                userName={user?.name || "Client"}
+                period={period}
+                dashboardId="dashboard-report-area"
+              />
 
-            <Link href="/dashboard/insights">
-              <button className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-[10px] font-black uppercase tracking-widest px-6 py-2.5 rounded-xl shadow-lg shadow-purple-900/40 hover:scale-105 active:scale-95 transition-all">
-                <span>
-                  <FiCpu size={14} />
-                </span>
-                AI Predictions
+              <Link href="/dashboard/insights">
+                <button className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-[10px] font-black uppercase tracking-widest px-6 py-2.5 rounded-xl shadow-lg shadow-purple-900/40 hover:scale-105 active:scale-95 transition-all">
+                  <span>
+                    <FiCpu size={14} />
+                  </span>
+                  {user?.limits?.aiInsights
+                    ? "AI Predictions"
+                    : "Unlock AI Insights"}
+                </button>
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:bg-white/20 transition-all active:scale-95 outline-none"
+              >
+                <FiLogOut size={14} />
+                Sign Out
               </button>
-            </Link>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl hover:bg-white/20 transition-all active:scale-95"
-            >
-              <FiLogOut size={14} />
-              Sign Out
-            </button>
+            </div>
           </div>
         </div>
 
@@ -194,434 +274,442 @@ export default function DashboardPage() {
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/10 rounded-full blur-2xl -ml-24 -mb-24" />
       </section>
 
-      {/* Navigation Tabs */}
-      <nav className="flex items-center gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto no-scrollbar sticky top-16 z-30">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
-              activeTab === tab.id
-                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
-                : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-            }`}
-          >
-            <span>
-              <tab.icon size={14} />
-            </span>
-            {tab.id}
-          </button>
-        ))}
-      </nav>
+      <div id="dashboard-report-area" className="flex flex-col gap-8">
+        {/* Navigation Tabs */}
+        <nav className="flex items-center gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto no-scrollbar sticky top-16 z-30 hide-in-pdf">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
+                activeTab === tab.id
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <span>
+                <tab.icon size={14} />
+              </span>
+              {tab.id}
+            </button>
+          ))}
+        </nav>
 
-      {/* Main Stats (Present in all tabs except maybe a few) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          title="Total Revenue"
-          value={`₹${overview.totalRevenue?.toLocaleString("en-IN") || "0"}`}
-          change={overview.revenueGrowth || 0}
-          icon={<FiDollarSign size={24} />}
-          trend={overview.revenueGrowth >= 0 ? "up" : "down"}
-        />
-        <MetricCard
-          title="Total Orders"
-          value={overview.totalOrders?.toLocaleString() || "0"}
-          change={overview.ordersGrowth || 0}
-          icon={<FiShoppingBag size={24} />}
-          trend={overview.ordersGrowth >= 0 ? "up" : "down"}
-        />
-        <MetricCard
-          title="Average Order Value"
-          value={`₹${overview.averageOrderValue?.toLocaleString("en-IN") || "0"}`}
-          change={overview.aovGrowth || 0}
-          icon={<FiTrendingUp size={24} />}
-          trend={overview.aovGrowth >= 0 ? "up" : "down"}
-        />
-        <MetricCard
-          title="Conversion Rate"
-          value={`${overview.conversionRate || "450.0"}%`}
-          change={12.5}
-          icon={<FiActivity size={24} />}
-          trend="up"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {[
-          {
-            label: "Customers",
-            value: analytics?.customers?.length || "0",
-            icon: "👥",
-          },
-          {
-            label: "Products",
-            value: analytics?.products?.length || "0",
-            icon: "📦",
-          },
-          { label: "Retention", value: "100.0%", icon: "🔄" },
-          { label: "Avg Rating", value: "0.0/5", icon: "⭐" },
-          { label: "Cart Size", value: "1.0 items", icon: "🛒" },
-          { label: "Sellers", value: "2", icon: "🚛" },
-        ].map((m, i) => (
-          <div
-            key={i}
-            className="bg-white rounded-2xl p-4 border border-gray-100 flex items-center gap-3"
-          >
-            <span className="text-xl">{m.icon}</span>
-            <div>
-              <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">
-                {m.label}
-              </p>
-              <p className="text-sm font-black text-gray-900 leading-none mt-0.5">
-                {m.value}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Overview Tab Content */}
-      {activeTab === "Overview" && (
-        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="h-full">
-              <RevenueTrend data={analytics?.dailyTrend || []} />
-            </div>
-            <div className="h-full">
-              <OrderStatusPie data={analytics?.orderStatus || []} />
-            </div>
-            <div className="h-full">
-              <TopSellingProductsChart data={analytics?.topProducts || []} />
-            </div>
-            <div className="h-full">
-              <CategoryDistributionChart
-                data={analytics?.categoryDistribution || []}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Regional Tab Content */}
-      {activeTab === "Regional" && (
-        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="h-full min-h-[400px]">
-              <RevenueByStateChart data={analytics?.stateData || []} />
-            </div>
-            <div className="h-full min-h-[400px]">
-              <OrdersByRegionTreemap data={analytics?.regionalData || []} />
-            </div>
-          </div>
-          <div className="w-full">
-            <RegionalPerformanceTable data={analytics?.regionalData || []} />
-          </div>
-        </div>
-      )}
-
-      {/* Pricing Tab Content */}
-      {activeTab === "Pricing" && (
-        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="h-full min-h-[400px]">
-              <ProfitMarginByProductChart
-                data={analytics?.profitAnalysis || []}
-              />
-            </div>
-            <div className="h-full min-h-[400px]">
-              <PriceRangeDistributionChart
-                data={analytics?.priceRangeDistribution || []}
-              />
-            </div>
-            <div className="h-full min-h-[400px]">
-              <DiscountEffectivenessChart
-                data={analytics?.discountEffectiveness || []}
-              />
-            </div>
-            <div className="h-full min-h-[400px]">
-              <PricingAnalysisChart data={analytics?.pricingStrategy || []} />
-            </div>
-          </div>
-          <div className="w-full">
-            <PricingStrategyTable data={analytics?.pricingStrategy || []} />
-          </div>
-        </div>
-      )}
-
-      {/* Customers Tab Content */}
-      {activeTab === "Customers" && (
-        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-          {/* Customer Specific Metric Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600">
-                <FiUsers size={24} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  New Customers
-                </p>
-                <h4 className="text-2xl font-black text-gray-900">
-                  {analytics?.customers?.length || 0}
-                </h4>
-                <p className="text-[9px] font-bold text-gray-400 mt-0.5">
-                  In selected period
-                </p>
-              </div>
-            </div>
-            <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-green-100 flex items-center justify-center text-green-600">
-                <FiActivity size={24} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  Repeat Customers
-                </p>
-                <h4 className="text-2xl font-black text-gray-900">
-                  {analytics?.customers?.filter((c: any) => c.totalOrders > 1)
-                    .length || 0}
-                </h4>
-                <p className="text-[9px] font-bold text-green-500 mt-0.5">
-                  100.0% Retention
-                </p>
-              </div>
-            </div>
-            <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-600">
-                <FiDollarSign size={24} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                  Avg CLV
-                </p>
-                <h4 className="text-2xl font-black text-gray-900">
-                  ₹
-                  {Math.round(
-                    ((overview.totalRevenue || 0) /
-                      (analytics?.customers?.length || 1)) *
-                      1.5,
-                  ).toLocaleString("en-IN")}
-                </h4>
-                <p className="text-[9px] font-bold text-gray-400 mt-0.5">
-                  Estimated lifetime value
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="h-full min-h-[400px]">
-              <CustomerSegmentationChart
-                data={[
-                  { name: "0", count: analytics?.customers?.length || 0 },
-                  {
-                    name: "1000",
-                    count:
-                      analytics?.customers?.filter(
-                        (c: any) => c.totalSpent > 1000,
-                      ).length || 0,
-                  },
-                ]}
-              />
-            </div>
-            <div className="h-full min-h-[400px]">
-              <PurchaseFrequencyChart
-                data={analytics?.customerPurchaseFrequency || []}
-              />
-            </div>
-          </div>
-          <div className="w-full">
-            <TopCustomersTable data={analytics?.topCustomers || []} />
-          </div>
-        </div>
-      )}
-
-      {/* Products Tab Content */}
-      {activeTab === "Products" && (
-        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-          <ProductInsights
-            fastMoving={analytics?.inventoryHealth?.fastMoving || 0}
-            slowMoving={analytics?.inventoryHealth?.slowMoving || 0}
-            outOfStock={analytics?.inventoryHealth?.outOfStock || 0}
+        {/* Main Stats (Present in all tabs except maybe a few) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCard
+            title="Total Revenue"
+            value={`₹${overview.totalRevenue?.toLocaleString("en-IN") || "0"}`}
+            change={overview.revenueGrowth || 0}
+            icon={<FiDollarSign size={24} />}
+            trend={overview.revenueGrowth >= 0 ? "up" : "down"}
+            comparisonLabel={comparisonLabel}
           />
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <FastMovingProducts products={analytics?.topProducts || []} />
-            </div>
-            <div className="lg:col-span-2">
-              <ProductProfitabilityChart
-                data={analytics?.profitAnalysis || []}
-              />
-            </div>
-          </div>
+          <MetricCard
+            title="Total Orders"
+            value={overview.totalOrders?.toLocaleString() || "0"}
+            change={overview.ordersGrowth || 0}
+            icon={<FiShoppingBag size={24} />}
+            trend={overview.ordersGrowth >= 0 ? "up" : "down"}
+            comparisonLabel={comparisonLabel}
+          />
+          <MetricCard
+            title="Total Profit"
+            value={`₹${overview.totalProfit?.toLocaleString("en-IN") || "0"}`}
+            change={overview.profitGrowth || 0}
+            icon={<FiTrendingUp size={24} />}
+            trend={overview.profitGrowth >= 0 ? "up" : "down"}
+            comparisonLabel={comparisonLabel}
+          />
+          <MetricCard
+            title="Profit Margin"
+            value={`${overview.profitMargin || "0"}%`}
+            change={overview.marginGrowth || 0}
+            icon={<FiActivity size={24} />}
+            trend={overview.marginGrowth >= 0 ? "up" : "down"}
+            comparisonLabel={comparisonLabel}
+          />
         </div>
-      )}
 
-      {/* Time Analysis Tab Content */}
-      {activeTab === "Time Analysis" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-500">
-          <HourlyAnalysis />
-          <WeeklyAnalysis />
-          <div className="lg:col-span-2">
-            <ConversionFunnel />
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {[
+            {
+              label: "Customers",
+              value: analytics?.customers?.length || "0",
+              icon: "👥",
+            },
+            {
+              label: "Products",
+              value: analytics?.products?.length || "0",
+              icon: "📦",
+            },
+            { label: "Retention", value: "100.0%", icon: "🔄" },
+            { label: "Avg Rating", value: "0.0/5", icon: "⭐" },
+            { label: "Cart Size", value: "1.0 items", icon: "🛒" },
+            { label: "Sellers", value: "2", icon: "🚛" },
+          ].map((m, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-2xl p-4 border border-gray-100 flex items-center gap-3"
+            >
+              <span className="text-xl">{m.icon}</span>
+              <div>
+                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">
+                  {m.label}
+                </p>
+                <p className="text-sm font-black text-gray-900 leading-none mt-0.5">
+                  {m.value}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
-      )}
 
-      {/* Returns Tab Content */}
-      {activeTab === "Returns" && (
-        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-                Total RTOs
-              </p>
-              <h4 className="text-3xl font-black text-gray-900">
-                {analytics.returnsAndRTO?.rtoCount || 0}
-              </h4>
-              <p className="text-[10px] font-bold text-orange-500 mt-1 uppercase tracking-widest">
-                {analytics.returnsAndRTO?.rtoRate}% RTO Rate
-              </p>
-            </div>
-            <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-                Total Returns
-              </p>
-              <h4 className="text-3xl font-black text-gray-900">
-                {analytics.returnsAndRTO?.returnCount || 0}
-              </h4>
-              <p className="text-[10px] font-bold text-indigo-500 mt-1 uppercase tracking-widest">
-                {analytics.returnsAndRTO?.returnRate}% Return Rate
-              </p>
-            </div>
-            <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-                Return Revenue Impact
-              </p>
-              <h4 className="text-3xl font-black text-red-500">
-                ₹
-                {(
-                  overview.totalRevenue *
-                  (analytics.returnsAndRTO?.returnRate / 100)
-                ).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
-              </h4>
-              <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
-                Est. Losses
-              </p>
-            </div>
-            <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-                COD RTO Variance
-              </p>
-              <h4 className="text-3xl font-black text-gray-900">
-                {Math.round(
-                  (analytics.returnsAndRTO?.codCorrelation?.[0]?.rtoRate /
-                    (analytics.returnsAndRTO?.codCorrelation?.[1]?.rtoRate ||
-                      1)) *
-                    10,
-                ) / 10}
-                x
-              </h4>
-              <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
-                Vs Prepaid
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="h-full min-h-[400px]">
-              <RTOCityChart data={analytics.returnsAndRTO?.cityWiseRTO || []} />
-            </div>
-            <div className="h-full min-h-[400px]">
-              <CODReturnCorrelation
-                data={analytics.returnsAndRTO?.codCorrelation || []}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="h-full min-h-[400px]">
-              <ReturnReasonsChart
-                data={analytics.returnsAndRTO?.reasonDistribution || []}
-              />
-            </div>
-            <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm flex flex-col justify-center">
-              <h3 className="text-xl font-black text-gray-900 mb-6">
-                Proactive RTO Mitigation
-              </h3>
-              <div className="space-y-4">
-                {[
-                  {
-                    label: "Address Verification",
-                    desc: "Validate PIN code and house number via AI",
-                    impact: "High",
-                  },
-                  {
-                    label: "Refusal Prediction",
-                    desc: "Flag customers with high historical return rates",
-                    impact: "Medium",
-                  },
-                  {
-                    label: "Prepaid Incentives",
-                    desc: "Offer 5% instant discount on prepaid orders",
-                    impact: "High",
-                  },
-                  {
-                    label: "WhatsApp Confirmation",
-                    desc: "Send automated delivery confirmation on WhatsApp",
-                    impact: "Medium",
-                  },
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold shrink-0">
-                      {i + 1}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest">
-                          {item.label}
-                        </h4>
-                        <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-blue-600 text-white uppercase tracking-tighter">
-                          Impact: {item.impact}
-                        </span>
-                      </div>
-                      <p className="text-[10px] font-bold text-gray-400 mt-1 leading-relaxed">
-                        {item.desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+        {/* Overview Tab Content */}
+        {activeTab === "Overview" && (
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-full">
+                <RevenueTrend data={analytics?.dailyTrend || []} />
+              </div>
+              <div className="h-full">
+                <OrderStatusPie data={analytics?.orderStatus || []} />
+              </div>
+              <div className="h-full">
+                <TopSellingProductsChart data={analytics?.topProducts || []} />
+              </div>
+              <div className="h-full">
+                <CategoryDistributionChart
+                  data={analytics?.categoryDistribution || []}
+                />
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Placeholder for other tabs */}
-      {![
-        "Overview",
-        "Regional",
-        "Pricing",
-        "Customers",
-        "Products",
-        "Returns",
-        "Time Analysis",
-      ].includes(activeTab) && (
-        <div className="h-64 bg-white rounded-[32px] border-2 border-dashed border-gray-100 flex items-center justify-center animate-in fade-in duration-500">
-          <div className="text-center">
-            <span className="text-3xl mb-4 block opacity-50">🚧</span>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-              {activeTab} Module Coming Soon
-            </p>
+        {/* Regional Tab Content */}
+        {activeTab === "Regional" && (
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-full min-h-[400px]">
+                <RevenueByStateChart data={analytics?.stateData || []} />
+              </div>
+              <div className="h-full min-h-[400px]">
+                <OrdersByRegionTreemap data={analytics?.regionalData || []} />
+              </div>
+            </div>
+            <div className="w-full">
+              <RegionalPerformanceTable data={analytics?.regionalData || []} />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Bottom Insights */}
+        {/* Pricing Tab Content */}
+        {activeTab === "Pricing" && (
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-full min-h-[400px]">
+                <ProfitMarginByProductChart
+                  data={analytics?.profitAnalysis || []}
+                />
+              </div>
+              <div className="h-full min-h-[400px]">
+                <PriceRangeDistributionChart
+                  data={analytics?.priceRangeDistribution || []}
+                />
+              </div>
+              <div className="h-full min-h-[400px]">
+                <DiscountEffectivenessChart
+                  data={analytics?.discountEffectiveness || []}
+                />
+              </div>
+              <div className="h-full min-h-[400px]">
+                <PricingAnalysisChart data={analytics?.pricingStrategy || []} />
+              </div>
+            </div>
+            <div className="w-full">
+              <PricingStrategyTable data={analytics?.pricingStrategy || []} />
+            </div>
+          </div>
+        )}
+
+        {/* Customers Tab Content */}
+        {activeTab === "Customers" && (
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            {/* Customer Specific Metric Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600">
+                  <FiUsers size={24} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    New Customers
+                  </p>
+                  <h4 className="text-2xl font-black text-gray-900">
+                    {analytics?.customers?.length || 0}
+                  </h4>
+                  <p className="text-[9px] font-bold text-gray-400 mt-0.5">
+                    In selected period
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-green-100 flex items-center justify-center text-green-600">
+                  <FiActivity size={24} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Repeat Customers
+                  </p>
+                  <h4 className="text-2xl font-black text-gray-900">
+                    {analytics?.customers?.filter((c: any) => c.totalOrders > 1)
+                      .length || 0}
+                  </h4>
+                  <p className="text-[9px] font-bold text-green-500 mt-0.5">
+                    100.0% Retention
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-600">
+                  <FiDollarSign size={24} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Avg CLV
+                  </p>
+                  <h4 className="text-2xl font-black text-gray-900">
+                    ₹
+                    {Math.round(
+                      ((overview.totalRevenue || 0) /
+                        (analytics?.customers?.length || 1)) *
+                        1.5,
+                    ).toLocaleString("en-IN")}
+                  </h4>
+                  <p className="text-[9px] font-bold text-gray-400 mt-0.5">
+                    Estimated lifetime value
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-full min-h-[400px]">
+                <CustomerSegmentationChart
+                  data={[
+                    { name: "0", count: analytics?.customers?.length || 0 },
+                    {
+                      name: "1000",
+                      count:
+                        analytics?.customers?.filter(
+                          (c: any) => c.totalSpent > 1000,
+                        ).length || 0,
+                    },
+                  ]}
+                />
+              </div>
+              <div className="h-full min-h-[400px]">
+                <PurchaseFrequencyChart
+                  data={analytics?.customerPurchaseFrequency || []}
+                />
+              </div>
+            </div>
+            <div className="w-full">
+              <TopCustomersTable data={analytics?.topCustomers || []} />
+            </div>
+          </div>
+        )}
+
+        {/* Products Tab Content */}
+        {activeTab === "Products" && (
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            <ProductInsights
+              fastMoving={analytics?.inventoryHealth?.fastMoving || 0}
+              slowMoving={analytics?.inventoryHealth?.slowMoving || 0}
+              outOfStock={analytics?.inventoryHealth?.outOfStock || 0}
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1">
+                <FastMovingProducts products={analytics?.topProducts || []} />
+              </div>
+              <div className="lg:col-span-2">
+                <ProductProfitabilityChart
+                  data={analytics?.profitAnalysis || []}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Time Analysis Tab Content */}
+        {activeTab === "Time Analysis" && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-500">
+            <HourlyAnalysis />
+            <WeeklyAnalysis />
+            <div className="lg:col-span-2">
+              <ConversionFunnel />
+            </div>
+          </div>
+        )}
+
+        {/* Returns Tab Content */}
+        {activeTab === "Returns" && (
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                  Total RTOs
+                </p>
+                <h4 className="text-3xl font-black text-gray-900">
+                  {analytics.returnsAndRTO?.rtoCount || 0}
+                </h4>
+                <p className="text-[10px] font-bold text-orange-500 mt-1 uppercase tracking-widest">
+                  {analytics.returnsAndRTO?.rtoRate}% RTO Rate
+                </p>
+              </div>
+              <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                  Total Returns
+                </p>
+                <h4 className="text-3xl font-black text-gray-900">
+                  {analytics.returnsAndRTO?.returnCount || 0}
+                </h4>
+                <p className="text-[10px] font-bold text-indigo-500 mt-1 uppercase tracking-widest">
+                  {analytics.returnsAndRTO?.returnRate}% Return Rate
+                </p>
+              </div>
+              <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                  Return Revenue Impact
+                </p>
+                <h4 className="text-3xl font-black text-red-500">
+                  ₹
+                  {(
+                    overview.totalRevenue *
+                    (analytics.returnsAndRTO?.returnRate / 100)
+                  ).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                </h4>
+                <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
+                  Est. Losses
+                </p>
+              </div>
+              <div className="bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                  COD RTO Variance
+                </p>
+                <h4 className="text-3xl font-black text-gray-900">
+                  {Math.round(
+                    (analytics.returnsAndRTO?.codCorrelation?.[0]?.rtoRate /
+                      (analytics.returnsAndRTO?.codCorrelation?.[1]?.rtoRate ||
+                        1)) *
+                      10,
+                  ) / 10}
+                  x
+                </h4>
+                <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">
+                  Vs Prepaid
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-full min-h-[400px]">
+                <RTOCityChart
+                  data={analytics.returnsAndRTO?.cityWiseRTO || []}
+                />
+              </div>
+              <div className="h-full min-h-[400px]">
+                <CODReturnCorrelation
+                  data={analytics.returnsAndRTO?.codCorrelation || []}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-full min-h-[400px]">
+                <ReturnReasonsChart
+                  data={analytics.returnsAndRTO?.reasonDistribution || []}
+                />
+              </div>
+              <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm flex flex-col justify-center">
+                <h3 className="text-xl font-black text-gray-900 mb-6">
+                  Proactive RTO Mitigation
+                </h3>
+                <div className="space-y-4">
+                  {[
+                    {
+                      label: "Address Verification",
+                      desc: "Validate PIN code and house number via AI",
+                      impact: "High",
+                    },
+                    {
+                      label: "Refusal Prediction",
+                      desc: "Flag customers with high historical return rates",
+                      impact: "Medium",
+                    },
+                    {
+                      label: "Prepaid Incentives",
+                      desc: "Offer 5% instant discount on prepaid orders",
+                      impact: "High",
+                    },
+                    {
+                      label: "WhatsApp Confirmation",
+                      desc: "Send automated delivery confirmation on WhatsApp",
+                      impact: "Medium",
+                    },
+                  ].map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold shrink-0">
+                        {i + 1}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest">
+                            {item.label}
+                          </h4>
+                          <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-blue-600 text-white uppercase tracking-tighter">
+                            Impact: {item.impact}
+                          </span>
+                        </div>
+                        <p className="text-[10px] font-bold text-gray-400 mt-1 leading-relaxed">
+                          {item.desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Placeholder for other tabs */}
+        {![
+          "Overview",
+          "Regional",
+          "Pricing",
+          "Customers",
+          "Products",
+          "Returns",
+          "Time Analysis",
+        ].includes(activeTab) && (
+          <div className="h-64 bg-white rounded-[32px] border-2 border-dashed border-gray-100 flex items-center justify-center animate-in fade-in duration-500">
+            <div className="text-center">
+              <span className="text-3xl mb-4 block opacity-50">🚧</span>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                {activeTab} Module Coming Soon
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Bottom Insights */}
+      </div>
     </div>
   );
 }

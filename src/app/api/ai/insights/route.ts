@@ -4,6 +4,8 @@ import AnalyticsAggregator from "@/lib/analytics/aggregator";
 import { insightsGenerator } from "@/lib/ai/insights-generator";
 import AnalyticsCache from "@/lib/analytics/cache";
 import Insight from "@/lib/db/models/Insight";
+import User from "@/lib/db/models/User";
+import { getSession } from "@/lib/auth";
 
 /**
  * POST /api/ai/insights
@@ -44,8 +46,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Get actual userId from session
-    const userId = "6991fdaa767d73422e21e18d";
+    // STEP 2.5: AUTH & GATING
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userId = session.userId;
+
+    await connectDB();
+    const user = await User.findById(userId);
+    if (!user?.limits?.aiInsights) {
+      return NextResponse.json(
+        {
+          error:
+            "AI Insights is a premium feature. Upgrade to Growth plan to unlock.",
+        },
+        { status: 403 },
+      );
+    }
 
     console.log(`🤖 Generating ${insightType} insight for store ${storeId}`);
 
@@ -591,8 +609,11 @@ export async function GET(request: NextRequest) {
     const storeId = searchParams.get("storeId") || "all";
     const language = (searchParams.get("language") as "en" | "hi") || "en";
 
-    // TODO: Get actual userId from session
-    const userId = "6991fdaa767d73422e21e18d";
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userId = session.userId;
 
     await connectDB();
 

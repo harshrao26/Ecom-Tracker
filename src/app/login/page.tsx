@@ -8,6 +8,8 @@ import {
   FiArrowRight,
   FiShield,
   FiAlertCircle,
+  FiEye,
+  FiEyeOff,
 } from "react-icons/fi";
 
 export default function LoginPage() {
@@ -17,6 +19,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -108,14 +111,32 @@ export default function LoginPage() {
               <div className="relative">
                 <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-12 pr-12 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   placeholder="••••••••"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
               </div>
+            </div>
+
+            {/* Forgot Password Link */}
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => router.push("/forgot-password")}
+                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium hover:underline"
+              >
+                Forgot Password?
+              </button>
             </div>
 
             <button
@@ -134,33 +155,65 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Signup Link */}
+          <div className="mt-6 text-center">
+            <p className="text-xs font-medium text-gray-500">
+              Don't have an account?{" "}
+              <button
+                onClick={() => {
+                  const plan = searchParams.get("plan");
+                  const redirect = searchParams.get("redirect");
+                  let signupUrl = "/signup";
+                  const params = new URLSearchParams();
+                  if (plan) params.append("plan", plan);
+                  if (redirect) params.append("redirect", redirect);
+                  if (params.toString()) signupUrl += `?${params.toString()}`;
+                  router.push(signupUrl);
+                }}
+                className="text-indigo-600 hover:text-indigo-700 font-black uppercase tracking-wide transition-colors"
+              >
+                Sign Up
+              </button>
+            </p>
+          </div>
+
           <div className="mt-8 text-center pt-8 border-t border-gray-50">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
               Demo Access Credentials
             </p>
             <div className="grid grid-cols-1 gap-2 text-[10px] font-bold text-gray-500 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left">
-                <span className="text-indigo-600 block mb-1">Super Admin (Full Access)</span>
+                <span className="text-indigo-600 block mb-1">
+                  Super Admin (Full Access)
+                </span>
                 <p>U: harshurao058@gmail.com</p>
                 <p>P: Harsh@7233</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left">
-                <span className="text-blue-600 block mb-1">Growth Tier User</span>
+                <span className="text-blue-600 block mb-1">
+                  Growth Tier User
+                </span>
                 <p>U: growth_user@example.com</p>
                 <p>P: password123</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left">
-                <span className="text-purple-600 block mb-1">Starter Tier User</span>
+                <span className="text-purple-600 block mb-1">
+                  Starter Tier User
+                </span>
                 <p>U: starter_user@example.com</p>
                 <p>P: password123</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left">
-                <span className="text-green-600 block mb-1">Free Tier User</span>
+                <span className="text-green-600 block mb-1">
+                  Free Tier User
+                </span>
                 <p>U: free_user@example.com</p>
                 <p>P: password123</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left">
-                <span className="text-red-600 block mb-1">Expired Subscription</span>
+                <span className="text-red-600 block mb-1">
+                  Expired Subscription
+                </span>
                 <p>U: expired_user@example.com</p>
                 <p>P: password123</p>
               </div>

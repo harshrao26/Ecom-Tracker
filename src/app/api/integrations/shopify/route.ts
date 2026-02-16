@@ -3,6 +3,7 @@ import crypto from "crypto";
 import ShopifyClient from "@/lib/integrations/shopify/client";
 import connectDB from "@/lib/db/connection";
 import Store from "@/lib/db/models/Store";
+import User from "@/lib/db/models/User";
 import { getSession } from "@/lib/auth";
 
 /**
@@ -22,6 +23,23 @@ export async function GET(request: NextRequest) {
 
     if (!shop) {
       return NextResponse.json({ error: "Shop is required" }, { status: 400 });
+    }
+
+    await connectDB();
+    const [existingStores, user] = await Promise.all([
+      Store.countDocuments({ userId, isActive: true }),
+      User.findById(userId),
+    ]);
+
+    const maxStores = user?.limits?.maxStores || 1;
+    if (maxStores !== -1 && existingStores >= maxStores) {
+      return NextResponse.json(
+        {
+          error: "Store limit reached",
+          message: "Upgrade your plan to connect more stores",
+        },
+        { status: 403 },
+      );
     }
 
     // Validate shop format (should be mystore.myshopify.com)
@@ -80,6 +98,22 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { shop, accessToken, storeName } = body;
+
+    const [existingStores, user] = await Promise.all([
+      Store.countDocuments({ userId, isActive: true }),
+      User.findById(userId),
+    ]);
+
+    const maxStores = user?.limits?.maxStores || 1;
+    if (maxStores !== -1 && existingStores >= maxStores) {
+      return NextResponse.json(
+        {
+          error: "Store limit reached",
+          message: "Upgrade your plan to connect more stores",
+        },
+        { status: 403 },
+      );
+    }
 
     if (!shop || !accessToken) {
       return NextResponse.json(

@@ -22,6 +22,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { siteUrl, consumerKey, consumerSecret, storeName } = body;
 
+    const [existingStores, user] = await Promise.all([
+      Store.countDocuments({ userId, isActive: true }),
+      User.findById(userId),
+    ]);
+
+    const maxStores = user?.limits?.maxStores || 1;
+    if (maxStores !== -1 && existingStores >= maxStores) {
+      return NextResponse.json(
+        {
+          error: "Store limit reached",
+          message: "Upgrade your plan to connect more stores",
+        },
+        { status: 403 },
+      );
+    }
+
     if (!siteUrl || !consumerKey || !consumerSecret) {
       return NextResponse.json(
         {

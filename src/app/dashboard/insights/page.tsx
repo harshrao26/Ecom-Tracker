@@ -27,6 +27,7 @@ import {
 import { useEffect } from "react";
 
 export default function AIInsightsPage() {
+  const [user, setUser] = useState<any>(null);
   const [insights, setInsights] = useState<{
     forecast?: any;
     profit?: any;
@@ -54,34 +55,43 @@ export default function AIInsightsPage() {
   /**
    * Fetch saved insights from DB
    */
-  async function fetchSavedInsights(lang: "en" | "hi") {
+  async function fetchData(lang: "en" | "hi") {
     try {
       setLoadingInitial(true);
-      const res = await fetch(`/api/ai/insights?storeId=all&language=${lang}`);
-      const result = await res.json();
+      const [userRes, insightsRes] = await Promise.all([
+        fetch("/api/auth/me"),
+        fetch(`/api/ai/insights?storeId=all&language=${lang}`),
+      ]);
 
-      if (result.success && result.data) {
+      const userData = await userRes.json();
+      const insightsData = await insightsRes.json();
+
+      if (userData.user) setUser(userData.user);
+
+      if (insightsData.success && insightsData.data) {
         const newInsights: any = {};
-        result.data.forEach((item: any) => {
+        insightsData.data.forEach((item: any) => {
           newInsights[item.type] = item.content;
         });
         setInsights(newInsights);
       }
     } catch (err) {
-      console.error("Failed to fetch insights:", err);
+      console.error("Failed to fetch dashboard data:", err);
     } finally {
       setLoadingInitial(false);
     }
   }
 
   useEffect(() => {
-    fetchSavedInsights(language);
+    fetchData(language);
   }, [language]);
 
   /**
    * grll Insights at once
    */
   async function generateAllInsights(targetLang: "en" | "hi") {
+    if (!user?.limits?.aiInsights) return;
+
     try {
       setIsGeneratingAll(true);
       setShowLangPicker(false);
@@ -135,6 +145,9 @@ export default function AIInsightsPage() {
       setIsGeneratingAll(false);
     }
   }
+
+  // Check if feature is locked
+  const isLocked = user && !user.limits?.aiInsights;
 
   /**
    * Helper to render a module card
@@ -221,8 +234,42 @@ export default function AIInsightsPage() {
   };
 
   return (
-    <div className="p-8 mx-auto bg-gray-50 min-h-screen">
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+    <div className="p-8 mx-auto bg-gray-50 min-h-screen relative">
+      {/* Locked Overlay */}
+      {isLocked && (
+        <div className="absolute inset-0 z-40 bg-gray-50/10 backdrop-blur-[6px] flex items-center justify-center">
+          <div className="bg-white p-12 rounded-[40px] shadow-2xl border border-gray-100 max-w-lg w-full text-center animate-in zoom-in-95 duration-500">
+            <div className="w-24 h-24 bg-indigo-600 rounded-full mx-auto flex items-center justify-center text-white shadow-xl shadow-indigo-200 mb-8">
+              <Brain size={48} className="animate-pulse" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900 tracking-tight mb-4 uppercase italic">
+              AI Intelligence is Locked
+            </h2>
+            <p className="text-gray-500 font-medium mb-10 leading-relaxed px-6">
+              Predictive revenue forecasting, regional strategy, and zero-click
+              audit intelligence are exclusive to the{" "}
+              <span className="text-indigo-600 font-black italic">GROWTH</span>{" "}
+              tier.
+            </p>
+            <div className="grid grid-cols-1 gap-3">
+              <a
+                href="/#pricing"
+                className="w-full bg-indigo-600 text-white rounded-2xl py-4 flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-xl shadow-indigo-100"
+              >
+                Upgrade to Growth
+                <Rocket className="w-4 h-4" />
+              </a>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-4">
+                Instantly unlocks 14+ AI Intelligence Modules
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6 ${isLocked ? "pointer-events-none" : ""}`}
+      >
         <div>
           <h1 className="text-4xl font-black text-gray-900 mb-2 flex items-center tracking-tighter">
             <Zap className="mr-3 text-blue-600 fill-blue-600 w-10 h-10" />

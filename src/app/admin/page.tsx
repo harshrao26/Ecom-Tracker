@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import AdminSidebar from "@/components/layout/AdminSidebar";
 import {
   FiUsers,
   FiDollarSign,
@@ -211,7 +212,9 @@ export default function SuperAdminPage() {
   }
 
   return (
-    <div className="px-8 bg-gray-50 py-6 space-y-8 animate-in fade-in duration-700">
+    <>
+      <AdminSidebar />
+      <div className="ml-64 px-8 bg-gray-50 py-6 space-y-8 animate-in fade-in duration-700">
       {/* Hero Header */}
       <section className="relative overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-700 rounded-[32px] p-8 text-white shadow-2xl shadow-indigo-500/20">
         <div className="relative z-10">
@@ -241,13 +244,13 @@ export default function SuperAdminPage() {
       </section>
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100">
+      <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
         {["overview", "revenue", "cohorts", "health", "subscribers"].map(
           (tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+              className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
                 activeTab === tab
                   ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
                   : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
@@ -257,6 +260,13 @@ export default function SuperAdminPage() {
             </button>
           ),
         )}
+        <a
+          href="/admin/analytics"
+          className="px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-gray-500 hover:bg-gray-50 hover:text-gray-900 flex items-center gap-2"
+        >
+          <FiActivity size={14} />
+          Live Analytics
+        </a>
       </div>
 
       {/* Overview Tab */}
@@ -781,5 +791,6 @@ export default function SuperAdminPage() {
         </>
       )}
     </div>
+    </>
   );
 }
