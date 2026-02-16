@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 
 const JWT_SECRET =
-  process.env.JWT_SECRET || "your-default-secret-change-in-production";
+  process.env.JWT_SECRET || "your-super-secret-jwt-key-here-make-it-long-and-random-change-in-production";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const token = request.cookies.get("auth_token")?.value;
   const { pathname } = request.nextUrl;
+  const secret = new TextEncoder().encode(JWT_SECRET);
+
+  console.log(`[MIDDLEWARE] Handling request: ${pathname}`);
 
   // Define protected routes and their required roles
   const protectedRoutes = [
@@ -20,36 +23,46 @@ export function middleware(request: NextRequest) {
 
   if (matchingRoute) {
     if (!token) {
+      console.log(`[MIDDLEWARE] No token for protected route ${pathname}. Redirecting to login.`);
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
 
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const { payload } = await jwtVerify(token, secret);
+      const role = payload.role as string;
 
-      if (!matchingRoute.roles.includes(decoded.role)) {
-        // Forbidden - redirect based on role or to home
+      if (!matchingRoute.roles.includes(role)) {
+        console.warn(`[MIDDLEWARE] Access denied for role ${role} on ${pathname}. Required: ${matchingRoute.roles}`);
         return NextResponse.redirect(new URL("/", request.url));
       }
-    } catch (error) {
-      // Invalid token
+      
+      console.log(`[MIDDLEWARE] Authorized: ${pathname} (Role: ${role})`);
+    } catch (error: any) {
+      console.error(`[MIDDLEWARE] JWT Verification failed for ${pathname}: ${error.message}`);
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
+      // Clear cookie if invalid
+      const response = NextResponse.redirect(loginUrl);
+      response.cookies.delete("auth_token");
+      return response;
     }
   }
 
-  // Redirect from login if already authenticated
+  // Handle redundant login access
   if (pathname === "/login" && token) {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      if (decoded.role === "super-admin") {
+      const { payload } = await jwtVerify(token, secret);
+      const role = payload.role as string;
+      console.log(`[MIDDLEWARE] Already authenticated (Role: ${role}). Redirecting from login.`);
+      
+      if (role === "super-admin") {
         return NextResponse.redirect(new URL("/admin", request.url));
       }
       return NextResponse.redirect(new URL("/dashboard", request.url));
     } catch (e) {
-      // Ignore
+      // Invalid token, allow login page
     }
   }
 

@@ -13,7 +13,6 @@ import {
   FiDollarSign,
   FiMessageSquare,
   FiBarChart2,
-  FiBulb,
   FiTarget,
   FiCpu,
   FiClock,
@@ -22,7 +21,6 @@ import {
 import { FaRegLightbulb } from "react-icons/fa";
 
 const sidebarItems = [
-  
   {
     id: "analytics",
     label: "Analytics",
@@ -35,7 +33,12 @@ const sidebarItems = [
     icon: FaRegLightbulb,
     path: "/dashboard/insights",
   },
-   
+  {
+    id: "integrations",
+    label: "Integrations",
+    icon: FiLayers,
+    path: "/dashboard/integrations",
+  },
 ];
 
 export default function Sidebar() {

@@ -94,7 +94,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   placeholder="name@company.com"
                   required
                 />
@@ -111,7 +111,7 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   placeholder="••••••••"
                   required
                 />
@@ -135,12 +135,35 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-8 text-center pt-8 border-t border-gray-50">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-              Demo Credentials
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
+              Demo Access Credentials
             </p>
-            <div className="mt-3 space-y-2 text-[10px] font-bold text-gray-500">
-              <p>Admin: harshurao058@gmail.com / Harsh@7233</p>
-              <p>User: free_user@example.com / password123</p>
+            <div className="grid grid-cols-1 gap-2 text-[10px] font-bold text-gray-500 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left">
+                <span className="text-indigo-600 block mb-1">Super Admin (Full Access)</span>
+                <p>U: harshurao058@gmail.com</p>
+                <p>P: Harsh@7233</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left">
+                <span className="text-blue-600 block mb-1">Growth Tier User</span>
+                <p>U: growth_user@example.com</p>
+                <p>P: password123</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left">
+                <span className="text-purple-600 block mb-1">Starter Tier User</span>
+                <p>U: starter_user@example.com</p>
+                <p>P: password123</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left">
+                <span className="text-green-600 block mb-1">Free Tier User</span>
+                <p>U: free_user@example.com</p>
+                <p>P: password123</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-left">
+                <span className="text-red-600 block mb-1">Expired Subscription</span>
+                <p>U: expired_user@example.com</p>
+                <p>P: password123</p>
+              </div>
             </div>
           </div>
         </div>
@@ -151,6 +174,20 @@ export default function LoginPage() {
       </div>
 
       <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e2e8f0;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #cbd5e1;
+        }
         @keyframes shake {
           0%,
           100% {

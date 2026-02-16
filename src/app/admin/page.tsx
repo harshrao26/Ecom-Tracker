@@ -211,7 +211,7 @@ export default function SuperAdminPage() {
   }
 
   return (
-    <div className="px-8 py-6 space-y-8 animate-in fade-in duration-700">
+    <div className="px-8 bg-gray-50 py-6 space-y-8 animate-in fade-in duration-700">
       {/* Hero Header */}
       <section className="relative overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-700 rounded-[32px] p-8 text-white shadow-2xl shadow-indigo-500/20">
         <div className="relative z-10">

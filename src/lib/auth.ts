@@ -1,8 +1,13 @@
-import jwt from "jsonwebtoken";
+import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
 const JWT_SECRET =
-  process.env.JWT_SECRET || "your-default-secret-change-in-production";
+  process.env.JWT_SECRET ||
+  "your-super-secret-jwt-key-here-make-it-long-and-random-change-in-production";
+
+function getSecret() {
+  return new TextEncoder().encode(JWT_SECRET);
+}
 
 export interface JWTPayload {
   userId: string;
@@ -11,12 +16,20 @@ export interface JWTPayload {
 }
 
 export async function signToken(payload: JWTPayload): Promise<string> {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+  const iat = Math.floor(Date.now() / 1000);
+  const exp = iat + 60 * 60 * 24 * 7; // 7 days
+
+  return new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt(iat)
+    .setExpirationTime(exp)
+    .sign(getSecret());
 }
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const { payload } = await jwtVerify(token, getSecret());
+    return payload as unknown as JWTPayload;
   } catch (error) {
     return null;
   }

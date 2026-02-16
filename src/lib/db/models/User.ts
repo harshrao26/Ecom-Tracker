@@ -133,19 +133,17 @@ const UserSchema = new Schema<IUser>(
 
 // Password hashing middleware
 UserSchema.pre("save", async function (next) {
-  console.log(
-    `🔌 Pre-save hook triggered for ${this.email}. Password modified: ${this.isModified("password")}`,
-  );
-  if (!this.isModified("password")) return next();
+  // Hash if modified OR if it's not already a bcrypt hash
+  const isBcryptHash = /^\$2[ayb]\$.*/.test(this.password);
+  if (!this.isModified("password") && isBcryptHash) {
+    return next();
+  }
 
   try {
-    console.log("🔐 Hashing password...");
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    console.log("✅ Password hashed successfully");
     next();
   } catch (error: any) {
-    console.error("❌ Hashing failed:", error);
     next(error);
   }
 });
